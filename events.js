@@ -1,11 +1,11 @@
 /*
  * high level event emitter over amqp
- * 
+ *
  * each event should has format:
  * <exchange>:<topic>
  */
 
-var 
+var
   EventEmitter = require("events").EventEmitter,
   ee = new EventEmitter(),
   util = require("util"),
@@ -17,7 +17,8 @@ var
   addListenerMethods = ["addListener", "on", "once"],
   copyMethods = ["removeListener", "removeAllListeners", "setMaxListeners", "listeners"];
 
-var channel = null;
+var channel = null,
+    runtime = "";
 
 function _parseEvent(event) {
   var tmp = event.split(":");
@@ -26,7 +27,7 @@ function _parseEvent(event) {
     topic: tmp[1]
   };
 }
-  
+
 function _getChannel(cb) {
   cb(null, channel);
 }
@@ -42,7 +43,7 @@ function _assertExchange(name, cb) {
     }, function(err) {
       return cb(err);
     });
-  }); 
+  });
 }
 
 function _createQueue(event, cb) {
@@ -51,17 +52,17 @@ function _createQueue(event, cb) {
     if(err) {
       return cb(err);
     }
-    var queueName = config.runtime+":"+QUEUE_PREFIX + eParsed.exchange;    
+    var queueName = runtime+":"+QUEUE_PREFIX + eParsed.exchange;
     chan.assertQueue(queueName, {}, function(err, attrs) {
       if(err) {
         return cb(err);
       }
-      
+
       chan.bindQueue(queueName, eParsed.exchange, eParsed.topic, {}, function(err) {
         if(err) {
           return cb(err);
-        }        
-        eventsQueues[event] = queueName;               
+        }
+        eventsQueues[event] = queueName;
         chan.consume(queueName, function(msg) {
           var content = JSON.parse(msg.content),
               args = [];
@@ -74,18 +75,18 @@ function _createQueue(event, cb) {
           chan.ack(msg);
           ee.emit.apply(ee, args);
         });
-        cb(null); 
+        cb(null);
       });
     });
-  }); 
+  });
 }
 
 function _preListen(event, cb) {
   var eParsed = _parseEvent(event);
   _assertExchange(eParsed.exchange, function(err) {
     if(err) {
-      return cb(err);      
-    }    
+      return cb(err);
+    }
     async.series([
       function(next) {
         if(eventsQueues[event]) {
@@ -99,33 +100,33 @@ function _preListen(event, cb) {
         });
       },
       function() {
-        cb(null);  
+        cb(null);
       }
-    ]);    
-  });  
+    ]);
+  });
 }
-  
+
 addListenerMethods.forEach(function(method) {
   exports[method] = function(event, cb) {
     if(["newListener", "removeListener"].indexOf(event) !== -1) {
       // special events
-      return ee[method].call(ee, event, cb); 
+      return ee[method].call(ee, event, cb);
     }
     _preListen(event, function(err) {
       if(!err) {
-        ee[method].call(ee, event, cb);  
-      }      
-    });      
-  }; 
+        ee[method].call(ee, event, cb);
+      }
+    });
+  };
 });
- 
+
 copyMethods.forEach(function(method){
   exports[method] = function() {
     var args = [].slice.call(arguments);
     ee[method].apply(ee, args);
   };
 });
- 
+
 exports.emit = function() {
   var args = [].slice.call(arguments),
       event = args.shift(),
@@ -140,11 +141,14 @@ exports.emit = function() {
         chan.publish(eParsed.exchange, eParsed.topic, buffer, {
           contentType: "text/json"
         });
-      });    
+      });
     }
   });
 };
 
 exports.setChannel = function(_channel) {
   channel = _channel;
+};
+exports.setRuntime = function(aRuntime) {
+  runtime = aRuntime;
 };
