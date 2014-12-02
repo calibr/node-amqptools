@@ -23,7 +23,7 @@ var channel = null,
 function _parseEvent(event) {
   var tmp = event.split(":");
   return {
-    exchange: EXCHANGE_PREFIX+tmp[0],
+    exchange: EXCHANGE_PREFIX + runtime + ":" + tmp[0],
     topic: tmp[1]
   };
 }
@@ -52,12 +52,12 @@ function _createQueue(event, cb) {
     if(err) {
       return cb(err);
     }
-    var queueName = runtime+":"+QUEUE_PREFIX + eParsed.exchange;
+    var queueName = QUEUE_PREFIX + eParsed.exchange + ":" + eParsed.topic;
+    console.log(queueName);
     chan.assertQueue(queueName, {}, function(err, attrs) {
       if(err) {
         return cb(err);
       }
-
       chan.bindQueue(queueName, eParsed.exchange, eParsed.topic, {}, function(err) {
         if(err) {
           return cb(err);
