@@ -53,7 +53,6 @@ function _createQueue(event, cb) {
       return cb(err);
     }
     var queueName = QUEUE_PREFIX + eParsed.exchange + ":" + eParsed.topic;
-    console.log(queueName);
     chan.assertQueue(queueName, {}, function(err, attrs) {
       if(err) {
         return cb(err);
