@@ -178,7 +178,7 @@ describe("Events", function() {
     events.emit("base:topic");
   });
 
-it("should summary call two listeners of two process with same apps 10 times(same event) with topic", function(done) {
+  it("should summary call two listeners of two process with same apps 10 times(same event) with topic", function(done) {
     var events1 = new tools.events("app");
     var events2 = new tools.events("app");
     var listener1Called = 0;
@@ -200,5 +200,19 @@ it("should summary call two listeners of two process with same apps 10 times(sam
     for(var i = 0; i != 10; i++) {
       events1.emit("base:topic");
     }
+  });
+
+  it("should call listener with payload", function(done) {
+    var events = new tools.events();
+    var data = {
+      field: "value"
+    };
+    function _listener(inData) {
+      inData.should.eql(data);
+      events.removeListener("base:topic", _listener);
+      done();
+    }
+    events.on("base:topic", _listener);
+    events.emit("base:topic", data);
   });
 });
