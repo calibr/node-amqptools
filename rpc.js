@@ -1,17 +1,17 @@
 /*
  * high level RPC over AMQP
- * 
+ *
  * action in format:
  * <exchange>:<topic>
- * 
+ *
  * request:
  * caller -> erpc:<exchange> (topic) -> processor
  * response:
  * processor -> replyTo -> caller
- * 
+ *
  */
 
-var 
+var
   util = require("util"),
   async = require("async"),
   crypto = require("crypto"),
@@ -35,15 +35,15 @@ function randomString(string_length) {
   var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
   var string_length = string_length || 48;
   var randomstring = '';
-  
+
   for (var i=0; i<string_length; i++) {
     var rnum = Math.floor(Math.random() * chars.length);
     randomstring += chars.substring(rnum,rnum+1);
   }
-  
+
   return randomstring;
-}  
-  
+}
+
 setInterval(function() {
   // check every hour for expired callbacks
   var removeKeys = [],
@@ -52,7 +52,7 @@ setInterval(function() {
       timeCreated,
       data;
   for(k in returnCbs) {
-    timeCreated = returnCbs[k].date.getTime(); 
+    timeCreated = returnCbs[k].date.getTime();
     if(now - timeCreated >= CALL_TIMEOUT) {
       removeKeys.push(k);
     }
@@ -72,7 +72,7 @@ function _parseAction(event) {
 }
 
 function _assertExchange(action, cb) {
-  var actionParsed = _parseAction(action);   
+  var actionParsed = _parseAction(action);
   channel.assertExchange(actionParsed.exchange, "direct", {
     durable: false,
     autoDelete: true
@@ -95,18 +95,18 @@ function _errorPrepare(err) {
 
 function _createQueue(action, cb) {
   // create action processor queue
-  var actionParsed = _parseAction(action);    
+  var actionParsed = _parseAction(action);
   var queueName = QUEUE_PREFIX + actionParsed.exchange + ":" + actionParsed.topic;
   channel.assertQueue(queueName, {}, function(err, attrs) {
     if(err) {
       return cb(err);
-    }      
+    }
     channel.bindQueue(queueName, actionParsed.exchange, actionParsed.topic, {}, function(err) {
       if(err) {
         return cb(err);
       }
       channel.consume(queueName, function(msg) {
-        var content = JSON.parse(msg.content);          
+        var content = JSON.parse(msg.content);
         try {
           dbg("Incoming RPC request", action);
           processors[action](content, function(err, body) {
@@ -117,27 +117,32 @@ function _createQueue(action, cb) {
             channel.sendToQueue(msg.properties.replyTo, new Buffer(JSON.stringify(response)), {
               correlationId: msg.properties.correlationId
             });
-            
-            dbg("Incoming RPC request", action, " processed! reply to", 
+
+            dbg("Incoming RPC request", action, " processed! reply to",
               msg.properties.replyTo);
-          });            
+          });
         }
         catch(ex) {
           console.error("ERROR IN rpc processor\n", ex.message, ex.stack);
-        }                       
-        channel.ack(msg);            
+        }
+        channel.ack(msg);
       });
       cb(null);
     });
   });
-}  
-  
+}
+
 exports.register = function(action, cb) {
   if(processors[action]) {
     return false;
   }
   processors[action] = cb;
   async.series([
+    function(next) {
+      exports._connect(function() {
+        next();
+      });
+    },
     function(next) {
       _assertExchange(action, function(err) {
         if(err) {
@@ -150,16 +155,21 @@ exports.register = function(action, cb) {
       _createQueue(action, function(err) {
         if(err) {
           return;
-        }    
-      });      
+        }
+      });
     }
-  ]);  
+  ]);
   return true;
 };
 
 exports.call = function(action, params, cb) {
   var actionParsed = _parseAction(action);
   async.series([
+    function(next) {
+      exports._connect(function() {
+        next();
+      });
+    },
     function(next) {
       _assertExchange(action, function(err) {
         if(err) {
@@ -176,13 +186,13 @@ exports.call = function(action, params, cb) {
         if(err) {
           return cb(err);
         }
-        replyQueue = attrs.queue;          
+        replyQueue = attrs.queue;
         channel.consume(replyQueue, function(_msg) {
           var msg = JSON.parse(_msg.content),
-              correlationId = _msg.properties.correlationId;            
-          if(returnCbs[correlationId]) {  
+              correlationId = _msg.properties.correlationId;
+          if(returnCbs[correlationId]) {
             dbg("RPC Response", returnCbs[correlationId].action);
-                        
+
             var resError = null;
             if(msg.error) {
               resError = new Error(msg.error.msg);
@@ -192,29 +202,29 @@ exports.call = function(action, params, cb) {
             }
             var returnCb = returnCbs[correlationId].cb;
             delete returnCbs[correlationId];
-            returnCb(resError, msg.body);              
-          }    
+            returnCb(resError, msg.body);
+          }
           else {
             dbg("Obtained reply but unrecognized by correlationId:", correlationId);
-          }            
-          channel.ack(_msg);          
+          }
+          channel.ack(_msg);
         });
         next();
-      });        
+      });
     },
     function() {
-      var correlationId = randomString();   
+      var correlationId = randomString();
       dbg("RPC Call", action, "wait reply to", replyQueue);
       returnCbs[correlationId] = {
         date: new Date(),
         cb: cb,
         action: action,
         params: params
-      };     
+      };
       channel.publish(actionParsed.exchange, actionParsed.topic, new Buffer(JSON.stringify(params)), {
         correlationId: correlationId,
         replyTo: replyQueue
-      });        
+      });
     }
   ]);
 };
