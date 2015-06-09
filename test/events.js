@@ -27,8 +27,10 @@ describe("Events", function() {
       events.removeListener("test", _listener);
       done();
     }
-    events.on("test", _listener);
-    events.emit("test");
+    events.on("test", _listener, function(err) {
+      should.not.exists(err);
+      events.emit("test");
+    });
   });
 
   it("should not call listener", function(done) {
@@ -37,8 +39,10 @@ describe("Events", function() {
       events.removeListener("test", _listener);
       throw "Listener called";
     }
-    events.on("test", _listener);
-    events.emit("test2");
+    events.on("test", _listener, function(err) {
+      should.not.exists(err);
+      events.emit("test2");
+    });
     setTimeout(function() {
       events.removeListener("test", _listener);
       done();
@@ -81,19 +85,27 @@ describe("Events", function() {
       events2.removeListener("test", _listener2);
       listener2Called = true;
     }
-    events1.on("test", _listener1);
-    events2.on("test", _listener2);
-    setTimeout(function() {
-      (listener1Called || listener2Called).should.equal(true);
-      if(listener1Called) {
-        listener2Called.should.equal(false);  
+    async.parallel([
+      function(next) {
+        events1.on("test", _listener1, next);
+      },
+      function(next) {
+        events2.on("test", _listener2, next);
       }
-      if(listener2Called) {
-        listener1Called.should.equal(false);  
-      }
-      done();
-    }, 500);
-    events1.emit("test");
+    ], function(err) {
+      should.not.exists(err);
+      setTimeout(function() {
+        (listener1Called || listener2Called).should.equal(true);
+        if(listener1Called) {
+          listener2Called.should.equal(false);  
+        }
+        if(listener2Called) {
+          listener1Called.should.equal(false);  
+        }
+        done();
+      }, 500);
+      events1.emit("test");
+    });
   });
 
   it("should summary call two listeners of one process 20 times(same event)", function(done) {
@@ -107,17 +119,25 @@ describe("Events", function() {
     function _listener2() {
       listener2Called++;
     }
-    events.on("test", _listener1);
-    events.on("test", _listener2);
-    setTimeout(function() {
-      events.removeListener("test", _listener1);
-      events.removeListener("test", _listener2);
-      (listener2Called + listener1Called).should.equal(20);
-      done();
-    }, 1000);
-    for(var i = 0; i != 10; i++) {
-      events.emit("test");
-    }
+    async.parallel([
+      function(next) {
+        events.on("test", _listener1, next);
+      },
+      function(next) {
+        events.on("test", _listener2, next);
+      }
+    ], function(err) {
+      should.not.exists(err);
+      setTimeout(function() {
+        events.removeListener("test", _listener1);
+        events.removeListener("test", _listener2);
+        (listener2Called + listener1Called).should.equal(20);
+        done();
+      }, 1000);
+      for(var i = 0; i != 10; i++) {
+        events.emit("test");
+      }
+    });
   });
 
   it("should summary call two listeners of two process with different apps 20 times(same event)", function(done) {
@@ -131,17 +151,25 @@ describe("Events", function() {
     function _listener2() {
       listener2Called++;
     }
-    events1.on("test", _listener1);
-    events2.on("test", _listener2);
-    setTimeout(function() {
-      events1.removeListener("test", _listener1);
-      events2.removeListener("test", _listener2);
-      (listener2Called + listener1Called).should.equal(20);
-      done();
-    }, 1000);
-    for(var i = 0; i != 10; i++) {
-      events1.emit("test");
-    }
+    async.parallel([
+      function(next) {
+        events1.on("test", _listener1, next);
+      },
+      function(next) {
+        events2.on("test", _listener2, next);
+      }
+    ], function(err) {
+      should.not.exists(err);
+      setTimeout(function() {
+        events1.removeListener("test", _listener1);
+        events2.removeListener("test", _listener2);
+        (listener2Called + listener1Called).should.equal(20);
+        done();
+      }, 1000);
+      for(var i = 0; i != 10; i++) {
+        events1.emit("test");
+      }
+    });
   });
 
   it("should summary call two listeners of two process with same apps 10 times(same event)", function(done) {
@@ -155,17 +183,25 @@ describe("Events", function() {
     function _listener2() {
       listener2Called++;
     }
-    events1.on("test", _listener1);
-    events2.on("test", _listener2);
-    setTimeout(function() {
-      events1.removeListener("test", _listener1);
-      events2.removeListener("test", _listener2);
-      (listener2Called + listener1Called).should.equal(10);
-      done();
-    }, 1000);
-    for(var i = 0; i != 10; i++) {
-      events1.emit("test");
-    }
+    async.parallel([
+      function(next) {
+        events1.on("test", _listener1, next);
+      },
+      function(next) {
+        events2.on("test", _listener2, next);
+      }
+    ], function(err) {
+      should.not.exists(err);
+      setTimeout(function() {
+        events1.removeListener("test", _listener1);
+        events2.removeListener("test", _listener2);
+        (listener2Called + listener1Called).should.equal(10);
+        done();
+      }, 1000);
+      for(var i = 0; i != 10; i++) {
+        events1.emit("test");
+      }
+    });
   });
 
   it("should call listener with topic", function(done) {
@@ -174,8 +210,10 @@ describe("Events", function() {
       events.removeListener("base:topic", _listener);
       done();
     }
-    events.on("base:topic", _listener);
-    events.emit("base:topic");
+    events.on("base:topic", _listener, function(err) {
+      should.not.exists(err);
+      events.emit("base:topic");
+    });
   });
 
   it("should summary call two listeners of two process with same apps 10 times(same event) with topic", function(done) {
@@ -189,17 +227,25 @@ describe("Events", function() {
     function _listener2() {
       listener2Called++;
     }
-    events1.on("base:topic", _listener1);
-    events2.on("base:topic", _listener2);
-    setTimeout(function() {
-      events1.removeListener("base:topic", _listener1);
-      events2.removeListener("base:topic", _listener2);
-      (listener2Called + listener1Called).should.equal(10);
-      done();
-    }, 1000);
-    for(var i = 0; i != 10; i++) {
-      events1.emit("base:topic");
-    }
+    async.parallel([
+      function(next) {
+        events1.on("base:topic", _listener1, next);
+      },
+      function(next) {
+        events2.on("base:topic", _listener2, next);
+      }
+    ], function(err) {
+      should.not.exists(err);
+      setTimeout(function() {
+        events1.removeListener("base:topic", _listener1);
+        events2.removeListener("base:topic", _listener2);
+        (listener2Called + listener1Called).should.equal(10);
+        done();
+      }, 1000);
+      for(var i = 0; i != 10; i++) {
+        events1.emit("base:topic");
+      }
+    });
   });
 
   it("should call listener with payload", function(done) {
@@ -212,7 +258,9 @@ describe("Events", function() {
       events.removeListener("base:topic", _listener);
       done();
     }
-    events.on("base:topic", _listener);
-    events.emit("base:topic", data);
+    events.on("base:topic", _listener, function(err) {
+      should.not.exists(err);
+      events.emit("base:topic", data);
+    });
   });
 });

@@ -38,7 +38,7 @@ var AMQPEventEmitter = function(runtime) {
 
   var self = this;
   addListenerMethods.forEach(function(method) {
-    self[method] = function(event, cb) {
+    self[method] = function(event, cb, eventSetCb) {
       if(["newListener", "removeListener"].indexOf(event) !== -1) {
         // special events
         return self.ee[method].call(self.ee, event, cb);
@@ -46,6 +46,9 @@ var AMQPEventEmitter = function(runtime) {
       self._preListen(event, function(err) {
         if(!err) {
           self.ee[method].call(self.ee, event, cb);
+        }
+        if(eventSetCb) {
+          eventSetCb(err);
         }
       });
     };
