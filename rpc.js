@@ -113,6 +113,7 @@ RPC.prototype._createQueue = function(action, cb) {
       }
       channel.ack(msg);
     }, {}, function(err, res) {
+      console.log(err, res);
       cb(err, res.consumerTag);
     });
   });
