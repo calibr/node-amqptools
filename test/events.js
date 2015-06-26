@@ -97,10 +97,10 @@ describe("Events", function() {
       setTimeout(function() {
         (listener1Called || listener2Called).should.equal(true);
         if(listener1Called) {
-          listener2Called.should.equal(false);  
+          listener2Called.should.equal(false);
         }
         if(listener2Called) {
-          listener1Called.should.equal(false);  
+          listener1Called.should.equal(false);
         }
         done();
       }, 500);

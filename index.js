@@ -46,13 +46,13 @@ exports.reconnect = function(cb) {
         connection = null;
         channel = null;
         next();
-      });    
+      });
     },
     function() {
       _connect(cb);
     }
   ]);
-  
+
 };
 
 exports.events = events;

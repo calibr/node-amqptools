@@ -15,10 +15,8 @@ var
   util = require("util"),
   async = require("async"),
   crypto = require("crypto"),
-  EXCHANGE_PREFIX = "_rpc:",
-  QUEUE_PREFIX = "_queue:",
+  QUEUE_PREFIX = "_queue_rpc:",
   CALL_TIMEOUT = 3600 * 1000, // one hour
-  processors = {},
   returnCbs = {},
   replyQueue = "",
   channel = null,
@@ -26,14 +24,14 @@ var
 
 function dbg() {
   if(DEBUG) {
-    arguments = [].slice.call(arguments);
-    console.log.apply(console, arguments);
+    var args = [].slice.call(arguments);
+    console.log.apply(console, args);
   }
 }
 
 function randomString(string_length) {
   var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
-  var string_length = string_length || 48;
+  string_length = string_length || 48;
   var randomstring = '';
 
   for (var i=0; i<string_length; i++) {
@@ -64,21 +62,9 @@ setInterval(function() {
 }, 3600 * 1000);
 
 function _parseAction(event) {
-  var tmp = event.split(":");
   return {
-    exchange: EXCHANGE_PREFIX + tmp[0],
-    topic: tmp[1]
+    queue: QUEUE_PREFIX + event,
   };
-}
-
-function _assertExchange(action, cb) {
-  var actionParsed = _parseAction(action);
-  channel.assertExchange(actionParsed.exchange, "direct", {
-    durable: false,
-    autoDelete: true
-  }, function(err) {
-    return cb(err);
-  });
 }
 
 function _errorPrepare(err) {
@@ -93,88 +79,104 @@ function _errorPrepare(err) {
   };
 }
 
-function _createQueue(action, cb) {
+var RPC = function() {
+  this.processors = {};
+};
+
+RPC.prototype._createQueue = function(action, cb) {
   // create action processor queue
   var actionParsed = _parseAction(action);
-  var queueName = QUEUE_PREFIX + actionParsed.exchange + ":" + actionParsed.topic;
-  channel.assertQueue(queueName, {}, function(err, attrs) {
+  var self = this;
+  channel.assertQueue(actionParsed.queue, {}, function(err, attrs) {
     if(err) {
       return cb(err);
     }
-    channel.bindQueue(queueName, actionParsed.exchange, actionParsed.topic, {}, function(err) {
-      if(err) {
-        return cb(err);
-      }
-      channel.consume(queueName, function(msg) {
-        var content = JSON.parse(msg.content);
-        try {
-          dbg("Incoming RPC request", action);
-          processors[action](content, function(err, body) {
-            var response = {
-              error: _errorPrepare(err),
-              body: typeof body !== "undefined" ? body : null
-            };
-            channel.sendToQueue(msg.properties.replyTo, new Buffer(JSON.stringify(response)), {
-              correlationId: msg.properties.correlationId
-            });
-
-            dbg("Incoming RPC request", action, " processed! reply to",
-              msg.properties.replyTo);
+    channel.consume(actionParsed.queue, function(msg) {
+      var content = JSON.parse(msg.content);
+      try {
+        dbg("Incoming RPC request", action);
+        self.processors[action].listener(content, function(err, body) {
+          var response = {
+            error: _errorPrepare(err),
+            body: typeof body !== "undefined" ? body : null
+          };
+          channel.sendToQueue(msg.properties.replyTo, new Buffer(JSON.stringify(response)), {
+            correlationId: msg.properties.correlationId
           });
-        }
-        catch(ex) {
-          console.error("ERROR IN rpc processor\n", ex.message, ex.stack);
-        }
-        channel.ack(msg);
-      });
-      cb(null);
+
+          dbg("Incoming RPC request", action, " processed! reply to",
+            msg.properties.replyTo);
+        });
+      }
+      catch(ex) {
+        console.error("ERROR IN rpc processor\n", ex.message, ex.stack);
+      }
+      channel.ack(msg);
+    }, {}, function(err, res) {
+      cb(err, res.consumerTag);
     });
   });
-}
+};
 
-exports.register = function(action, cb) {
-  if(processors[action]) {
-    return false;
+RPC.prototype.register = function(action, cb, regiterCb) {
+  var self = this;
+  regiterCb = regiterCb || function() {};
+  if(self.processors[action]) {
+    throw new Error("Can't register same action processor twice");
   }
-  processors[action] = cb;
+  var consumerTag;
   async.series([
     function(next) {
-      exports._connect(function() {
+      module.exports._connect(function() {
         next();
       });
     },
     function(next) {
-      _assertExchange(action, function(err) {
-        if(err) {
-          return;
+      self._createQueue(action, function(err, tag) {
+        if(!err) {
+          consumerTag = tag;
         }
-        next();
-      });
-    },
-    function() {
-      _createQueue(action, function(err) {
-        if(err) {
-          return;
-        }
+        next(err);
       });
     }
-  ]);
+  ], function(err) {
+    if(!err) {
+      self.processors[action] = {
+        listener: cb,
+        consumerTag: consumerTag
+      };
+    }
+    regiterCb(err);
+  });
   return true;
 };
 
-exports.call = function(action, params, cb) {
+RPC.prototype.unregister = function(action, unregisterCb) {
+  unregisterCb = unregisterCb || function() {};
+  var self = this;
+  if(!self.processors[action]) {
+    process.nextTick(function() {
+      unregisterCb(null);
+    });
+    return false;
+  }
+  channel.cancel(self.processors[action].consumerTag, function(err) {
+    if(!err) {
+      delete self.processors[action];
+    }
+    unregisterCb(err);
+  });
+};
+
+RPC.prototype.call = function(action, params, cb) {
+  if(typeof params === "function") {
+    cb = params;
+    params = {};
+  }
   var actionParsed = _parseAction(action);
   async.series([
     function(next) {
-      exports._connect(function() {
-        next();
-      });
-    },
-    function(next) {
-      _assertExchange(action, function(err) {
-        if(err) {
-          return cb(err);
-        }
+      module.exports._connect(function() {
         next();
       });
     },
@@ -182,7 +184,10 @@ exports.call = function(action, params, cb) {
       if(replyQueue) {
         return next();
       }
-      channel.assertQueue("", {}, function(err, attrs) {
+      channel.assertQueue("", {
+        durable: false,
+        autoDelete: true
+      }, function(err, attrs) {
         if(err) {
           return cb(err);
         }
@@ -221,7 +226,7 @@ exports.call = function(action, params, cb) {
         action: action,
         params: params
       };
-      channel.publish(actionParsed.exchange, actionParsed.topic, new Buffer(JSON.stringify(params)), {
+      channel.sendToQueue(actionParsed.queue, new Buffer(JSON.stringify(params)), {
         correlationId: correlationId,
         replyTo: replyQueue
       });
@@ -229,6 +234,13 @@ exports.call = function(action, params, cb) {
   ]);
 };
 
-exports.setChannel = function(_channel) {
+RPC.purgeActionQueue = function(action, cb) {
+  var actionParsed = _parseAction(action);
+  channel.purgeQueue(actionParsed.queue, cb);
+};
+
+module.exports = RPC;
+
+module.exports.setChannel = function(_channel) {
   channel = _channel;
 };
