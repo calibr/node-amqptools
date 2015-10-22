@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "removeComments": true,
+    "sourceMap": true,
+    "inlineSources": true
+  },
+  "files": [
+    "tasks.ts",
+    "test/tasks.ts"
+  ]
+}
