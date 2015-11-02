@@ -1,23 +1,13 @@
-/*
- * high level RPC over AMQP
- *
- * action in format:
- * <exchange>:<topic>
- *
- * request:
- * caller -> erpc:<exchange> (topic) -> processor
- * response:
- * processor -> replyTo -> caller
- *
- */
+/// <reference path="../typings/tsd.d.ts" />
 
-var
-  util = require("util"),
-  async = require("async"),
-  crypto = require("crypto"),
-  QUEUE_PREFIX = "_queue_rpc:",
-  CALL_TIMEOUT = 3600 * 1000, // one hour
-  returnCbs = {},
+import util = require("util")
+import async = require("async")
+import crypto = require("crypto")
+
+const QUEUE_PREFIX = "_queue_rpc:";
+const CALL_TIMEOUT = 3600 * 1000;
+
+var returnCbs = {},
   replyQueue = "",
   channel = null,
   DEBUG = false;
@@ -240,8 +230,9 @@ RPC.purgeActionQueue = function(action, cb) {
   channel.purgeQueue(actionParsed.queue, cb);
 };
 
-module.exports = RPC;
-
-module.exports.setChannel = function(_channel) {
+RPC.setChannel = function(_channel) {
   channel = _channel;
 };
+
+export = RPC;
+

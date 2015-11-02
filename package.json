@@ -3,10 +3,12 @@
   "version": "0.6.0",
   "description": "AMQP Tools",
   "author": "calibr<calibr@gmail.com>",
-  "contributors": [{
-    "name": "rusmaxim",
-    "email": "rusmaxim@gmail.com"
-  }],
+  "contributors": [
+    {
+      "name": "rusmaxim",
+      "email": "rusmaxim@gmail.com"
+    }
+  ],
   "keywords": [
     "amqp",
     "rpc",
@@ -20,7 +22,7 @@
     "lib/rpc.js"
   ],
   "scripts": {
-    "test": "grunt; mocha lib --recursive"
+    "test": "grunt; mocha lib --require source-map-support/register --recursive"
   },
   "main": "lib/index.js",
   "dependencies": {
@@ -33,7 +35,8 @@
     "grunt-ts": "^5.1.0",
     "jit-grunt": "^0.9.1",
     "lodash": "^3.10.1",
-    "node-uuid": "^1.4.3"
+    "node-uuid": "^1.4.3",
+    "source-map-support": "^0.3.3"
   },
   "repository": {
     "type": "git",

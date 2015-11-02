@@ -1,17 +1,13 @@
-/*
- * high level event emitter over amqp
- *
- * each event should has format:
- * <exchange>:<topic>
- */
+/// <reference path="../typings/tsd.d.ts" />
 
-var
-  EventEmitter = require("events").EventEmitter,
-  util = require("util"),
-  async = require("async"),
-  // associations between events and AMQP queues
-  EXCHANGE_PREFIX = "_event:",
-  QUEUE_PREFIX = "_queue:",
+import events = require("events")
+import util = require("util")
+import async = require("async")
+
+const EXCHANGE_PREFIX = "_event:";
+const QUEUE_PREFIX = "_queue:";
+
+var EventEmitter = events.EventEmitter,
   addListenerMethods = ["addListener", "on", "once"],
   copyMethods = ["removeListener", "removeAllListeners", "setMaxListeners", "listeners"];
 
@@ -29,9 +25,7 @@ function _getChannel(cb) {
   cb(null, channel);
 }
 
-
-
-var AMQPEventEmitter = function(runtime) {
+function AMQPEventEmitter (runtime) {
   this.runtime = runtime || "";
   this.ee = new EventEmitter();
   this.eventsQueues = {};
@@ -61,7 +55,6 @@ var AMQPEventEmitter = function(runtime) {
     };
   });
 };
-exports = module.exports = AMQPEventEmitter;
 
 AMQPEventEmitter.prototype.emit = function() {
   var args = [].slice.call(arguments),
@@ -142,7 +135,7 @@ AMQPEventEmitter.prototype._createQueue = function(event, cb) {
 
 AMQPEventEmitter.prototype._preListen = function(event, cb) {
   var self = this;
-  exports._connect(function() {
+  AMQPEventEmitter._connect(function() {
     var eParsed = _parseEvent(event);
     self._assertExchange(eParsed.exchange, function(err) {
       if(err) {
@@ -168,7 +161,8 @@ AMQPEventEmitter.prototype._preListen = function(event, cb) {
   });
 };
 
-
-exports.setChannel = function(_channel) {
+AMQPEventEmitter.setChannel = function(_channel) {
   channel = _channel;
 };
+
+export = AMQPEventEmitter;

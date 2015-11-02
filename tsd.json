@@ -12,7 +12,7 @@
       "commit": "98a9440752f3f2ad7786aba1bf9bdefec818919e"
     },
     "node/node.d.ts": {
-      "commit": "98a9440752f3f2ad7786aba1bf9bdefec818919e"
+      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
     },
     "node-uuid/node-uuid-base.d.ts": {
       "commit": "98a9440752f3f2ad7786aba1bf9bdefec818919e"
@@ -21,12 +21,18 @@
       "commit": "98a9440752f3f2ad7786aba1bf9bdefec818919e"
     },
     "lodash/lodash.d.ts": {
-      "commit": "98a9440752f3f2ad7786aba1bf9bdefec818919e"
+      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
     },
     "mocha/mocha.d.ts": {
       "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
     },
     "should/should.d.ts": {
+      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
+    },
+    "async/async.d.ts": {
+      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
+    },
+    "source-map-support/source-map-support.d.ts": {
       "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
     }
   }

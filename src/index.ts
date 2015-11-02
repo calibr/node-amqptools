@@ -1,14 +1,17 @@
-var amqp = require("amqplib/callback_api"),
-  events = require("./events"),
-  rpc = require("./rpc"),
-  tasks = require("./tasks"),
-  async = require("async");
+/// <reference path="../typings/tsd.d.ts" />
+
+import amqp = require("amqplib/callback_api")
+import eventsLib = require("./event")
+import rpcLib = require("./rpc")
+import tasksLib = require("./task")
+import async = require("async")
+
+require('source-map-support').install();
 
 var connectionURI,
   channel,
-  connection;
-
-var _connectInProgress = false,
+  connection,
+  _connectInProgress = false,
   _connectCallbacks = [];
 
 function _connect(cb) {
@@ -29,8 +32,8 @@ function _connect(cb) {
       if(err) {
         throw err;
       }
-      events.setChannel(amqpChannel);
-      rpc.setChannel(amqpChannel);
+      eventsLib.setChannel(amqpChannel);
+      rpcLib.setChannel(amqpChannel);
       channel = amqpChannel;
       _connectInProgress = false;
       _connectCallbacks.forEach(function(extraCb) {
@@ -41,15 +44,15 @@ function _connect(cb) {
   });
 }
 
-events._connect = _connect;
-rpc._connect = _connect;
-tasks._connect = _connect;
+eventsLib._connect = _connect;
+rpcLib._connect = _connect;
+tasksLib._connect = _connect;
 
-exports.setConnectionURI = function(uri) {
+export function setConnectionURI (uri) {
   connectionURI = uri;
-};
+}
 
-exports.disconnect = function(cb) {
+export function disconnect (cb) {
   if(!connection) {
     return cb();
   }
@@ -58,9 +61,9 @@ exports.disconnect = function(cb) {
     channel = null;
     cb();
   });
-};
+}
 
-exports.reconnect = function(cb) {
+export function reconnect(cb) {
   cb = cb || function() {};
   async.series([
     function(next) {
@@ -80,8 +83,8 @@ exports.reconnect = function(cb) {
     }
   ]);
 
-};
+}
 
-exports.events = events;
-exports.rpc = rpc;
-exports.tasks = tasks;
+export var events = eventsLib;
+export var rpc = rpcLib;
+export var tasks = tasksLib;
