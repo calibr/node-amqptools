@@ -8,83 +8,95 @@ import async = require("async")
 
 require('source-map-support').install();
 
-var connectionURI,
-  channel,
-  connection,
-  _connectInProgress = false,
-  _connectCallbacks = [];
+class ChannelManager {
+  connectionURI: string;
+  channel:amqpLib.Channel;
+  connection: amqpLib.Connection;
 
-function _connect(cb) {
-  if(channel) {
-    return cb(channel);
+  private connectCallbacks:((err:Error, channel:amqpLib.Channel) => void)[];
+  private connectInProgress:boolean;
+
+  constructor() {
+    this.connectCallbacks = [];
   }
 
-  _connectCallbacks.push(cb);
-  if(_connectInProgress) return;
+  get events() {
+    eventManager.channelManager = this;
+    return eventManager;
+  }
 
-  _connectInProgress = true;
-  amqpLib.connect(connectionURI, function(err, conn) {
-    if(err) {
-      throw err;
+  get rpc() {
+    rpcManager.channelManager = this;
+    return rpcManager;
+  }
+
+  get tasks() {
+    taskManager.channelManager = this;
+    return taskManager;
+  }
+
+
+  connect(cb) {
+    if (this.channel) {
+      return cb(null, this.channel);
     }
-    connection = conn;
-    conn.createChannel(function(err, amqpChannel) {
-      if(err) {
-        throw err;
-      }
-      eventManager.setChannel(amqpChannel);
-      rpcManager.setChannel(amqpChannel);
-      channel = amqpChannel;
-      _connectInProgress = false;
-      _connectCallbacks.forEach(function(extraCb) {
-        extraCb(channel);
+
+    this.connectCallbacks.push(cb);
+    if (this.connectInProgress) return;
+    this.connectInProgress = true;
+
+    amqpLib.connect(this.connectionURI, (err, connection) => {
+      if (err) return this.connectRespond(err, null);
+      this.connection = connection;
+      this.connection.createChannel((err, channel) => {
+        if (err) return this.connectRespond(err, null);
+
+        eventManager.setChannel(channel);
+        rpcManager.setChannel(channel);
+        this.channel = channel;
+
+        this.connectRespond(null, this.channel)
       });
-      _connectCallbacks = [];
     });
-  });
-}
-
-eventManager._connect = _connect;
-rpcManager._connect = _connect;
-taskManager._connect = _connect;
-
-export function setConnectionURI (uri) {
-  connectionURI = uri;
-}
-
-export function disconnect (cb) {
-  if(!connection) {
-    return cb();
   }
-  connection.close(function() {
-    connection = null;
-    channel = null;
-    cb();
-  });
-}
 
-export function reconnect(cb) {
-  cb = cb || function() {};
-  async.series([
-    function(next) {
-      if(!connection) {
-        return next();
-      }
-      connection.close(function() {
-        connection = null;
-        channel = null;
-        next();
-      });
-    },
-    function() {
-      _connect(function (channel) {
-        cb()
-      });
+  connectRespond(err, channel) {
+    this.connectInProgress = false;
+
+    this.connectCallbacks.forEach((extraCb) => {
+      extraCb(err, channel);
+    });
+    this.connectCallbacks = [];
+  }
+
+  setConnectionURI(uri) {
+    this.connectionURI = uri;
+  }
+
+  disconnect(cb) {
+    if (!this.connection) {
+      return cb();
     }
-  ]);
+    this.connection.close(() => {
+      this.connection = null;
+      this.channel = null;
+      cb();
+    });
+  }
 
+  reconnect(cb?) {
+    if (!this.connection) {
+      return this.connect(cb);
+    }
+
+    this.connection.close(() => {
+      this.connection = null;
+      this.channel = null;
+      this.connect(cb);
+    });
+  }
 }
 
-export var events = eventManager;
-export var rpc = rpcManager;
-export var tasks = taskManager;
+var channelManager = new ChannelManager();
+
+export = channelManager;

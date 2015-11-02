@@ -62,12 +62,9 @@ interface Processors {
 
 class RPC {
   processors: Processors;
+  static channelManager: any;
   constructor() {
     this.processors = {};
-  }
-
-  static _connect(cb?:(channel) => void) {
-    throw new Error('Need to set tasks connect function');
   }
 
   private createQueue(action, cb) {
@@ -114,7 +111,7 @@ class RPC {
     var consumerTag;
     async.series([
       function(next) {
-        module.exports._connect(function() {
+        RPC.channelManager.connect(function() {
           next();
         });
       },
@@ -163,7 +160,7 @@ class RPC {
     var actionParsed = _parseAction(action);
     async.series([
       function(next) {
-        module.exports._connect(function() {
+        RPC.channelManager.connect(function() {
           next();
         });
       },

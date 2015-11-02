@@ -33,6 +33,7 @@ class AMQPEventEmitter {
   runtime:string;
   ee:events.EventEmitter;
   eventsQueues:EventsQueues;
+  static channelManager: any;
 
   constructor(runtime) {
     this.runtime = runtime || "";
@@ -62,12 +63,8 @@ class AMQPEventEmitter {
     });
   }
 
-  static _connect(cb?:(channel) => void) {
-    throw new Error('Need to set tasks connect function');
-  }
-
   private preListen(event, cb) {
-    AMQPEventEmitter._connect(() => {
+    AMQPEventEmitter.channelManager.connect(() => {
       var eParsed = parseEvent(event);
       this.assertExchange(eParsed.exchange, (err) => {
         if (err) return cb(err);

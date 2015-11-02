@@ -52,13 +52,11 @@ var taskManager = {
   service: "unknown",
   exchangeName: "",
   channelPromise: null,
-  _connect: (cb: (channel) => void) => {
-    throw new Error('Need to set tasks connect function');
-  },
+  channelManager: null,
   getChannel: () => {
     if (!taskManager.channelPromise) {
       taskManager.channelPromise = new Promise((resolve, reject) => {
-        taskManager._connect((channel) => {
+        taskManager.channelManager.connect((err, channel) => {
           resolve(channel);
         })
       });
