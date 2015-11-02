@@ -34,6 +34,12 @@
     },
     "source-map-support/source-map-support.d.ts": {
       "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
+    },
+    "amqplib/amqplib.d.ts": {
+      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
+    },
+    "when/when.d.ts": {
+      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
     }
   }
 }

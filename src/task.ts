@@ -5,6 +5,7 @@ const QUEUE_PREFIX = "nimbus:jobs:queue:";
 const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
 const JOB_QUEUE_OPTIONS = { durable: true, autoDelete: false };
 
+import amqpLib = require("amqplib/callback_api")
 import Promise = require("bluebird")
 import uuid = require("node-uuid")
 import _ = require("lodash")
@@ -35,7 +36,7 @@ class Task {
 
     this.taskManager.getChannel().then((channel) => {
       currentChannel = channel;
-      return taskManager.assertExchange(currentChannel);
+      return taskManager.assertExchange();
     }).then(() => {
       return taskManager.getQueue(this.type, true);
     }).then(() => {
@@ -75,16 +76,18 @@ var taskManager = {
       return queues[taskType];
     });
   },
-  assertExchange: (channel) => {
-    var exchangeName = EXCHANGE_PREFIX + taskManager.service;
-    if (taskManager.exchangeName == exchangeName) return Promise.resolve(channel);
-    return new Promise((resolve, reject) => {
-      channel.assertExchange(exchangeName, 'direct', EXCHANGE_OPTIONS, (err) => {
-        taskManager.exchangeName = exchangeName;
-        if (err) return reject(err);
-        resolve(channel);
-      })
-    });
+  assertExchange: () => {
+    return taskManager.getChannel().then((channel) => {
+      var exchangeName = EXCHANGE_PREFIX + taskManager.service;
+      if (taskManager.exchangeName == exchangeName) return Promise.resolve(channel);
+      return new Promise((resolve, reject) => {
+        channel.assertExchange(exchangeName, 'direct', EXCHANGE_OPTIONS, (err) => {
+          taskManager.exchangeName = exchangeName;
+          if (err) return reject(err);
+          resolve(channel);
+        })
+      });
+    })
   },
   assertQueue: (queueName: string) => {
     return taskManager.getChannel().then((channel) => {
@@ -102,6 +105,12 @@ var taskManager = {
       channel.bindQueue(queueName, taskManager.exchangeName, taskType);
     });
   },
+  purgeQueue: (taskType: string, cb) => {
+    return taskManager.getChannel().then((channel) => {
+      var queueName = QUEUE_PREFIX + taskType;
+      return channel.purgeQueue(queueName, cb);
+    });
+  },
   Task: Task,
   processTask: (taskType,  taskCallback) => {
     var queueName = QUEUE_PREFIX + taskType,
@@ -113,7 +122,7 @@ var taskManager = {
     }).then(() => {
       currentChannel.prefetch(1);
       currentChannel.consume(queueName, (msg) => {
-        var taskData = JSON.parse(msg.content);
+        var taskData = JSON.parse(msg.content.toString());
         taskCallback(taskData, () => {
           currentChannel.ack(msg);
         })

@@ -9,9 +9,12 @@ var Task = tasks.Task;
 tools.setConnectionURI("amqp://localhost");
 
 describe("Tasks", () => {
-  it("should produce task and consume it", (done) => {
-
+  before((done) => {
     tasks.service = "amqpTest";
+    tasks.purgeQueue('testTask', done);
+  });
+
+  it("should produce task and consume it", (done) => {
     var newTask = new Task('testTask', {title: "test", data: {value: 1}});
     newTask.start(() => {
       should.exists(newTask.uuid);

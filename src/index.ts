@@ -1,9 +1,9 @@
 /// <reference path="../typings/tsd.d.ts" />
 
-import amqp = require("amqplib/callback_api")
-import eventsLib = require("./event")
-import rpcLib = require("./rpc")
-import tasksLib = require("./task")
+import amqpLib = require("amqplib/callback_api")
+import eventManager = require("./eventEmitter")
+import rpcManager = require("./rpc")
+import taskManager = require("./task")
 import async = require("async")
 
 require('source-map-support').install();
@@ -23,7 +23,7 @@ function _connect(cb) {
   if(_connectInProgress) return;
 
   _connectInProgress = true;
-  amqp.connect(connectionURI, function(err, conn) {
+  amqpLib.connect(connectionURI, function(err, conn) {
     if(err) {
       throw err;
     }
@@ -32,8 +32,8 @@ function _connect(cb) {
       if(err) {
         throw err;
       }
-      eventsLib.setChannel(amqpChannel);
-      rpcLib.setChannel(amqpChannel);
+      eventManager.setChannel(amqpChannel);
+      rpcManager.setChannel(amqpChannel);
       channel = amqpChannel;
       _connectInProgress = false;
       _connectCallbacks.forEach(function(extraCb) {
@@ -44,9 +44,9 @@ function _connect(cb) {
   });
 }
 
-eventsLib._connect = _connect;
-rpcLib._connect = _connect;
-tasksLib._connect = _connect;
+eventManager._connect = _connect;
+rpcManager._connect = _connect;
+taskManager._connect = _connect;
 
 export function setConnectionURI (uri) {
   connectionURI = uri;
@@ -85,6 +85,6 @@ export function reconnect(cb) {
 
 }
 
-export var events = eventsLib;
-export var rpc = rpcLib;
-export var tasks = tasksLib;
+export var events = eventManager;
+export var rpc = rpcManager;
+export var tasks = taskManager;
