@@ -1,4 +1,4 @@
-/// <reference path="./typings/tsd.d.ts" />
+/// <reference path="../typings/tsd.d.ts" />
 
 const EXCHANGE_PREFIX = "nimbus:jobs:";
 const QUEUE_PREFIX = "nimbus:jobs:queue:";

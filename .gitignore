@@ -1,5 +1,8 @@
 .idea
 
+src/.baseDir.ts
+lib/.baseDir.js
+
 node_modules
 .DS_Store
 .project
