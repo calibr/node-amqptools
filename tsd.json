@@ -12,7 +12,7 @@
       "commit": "98a9440752f3f2ad7786aba1bf9bdefec818919e"
     },
     "node/node.d.ts": {
-      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
+      "commit": "0dd29bf8253536ae24e61c109524e924ea510046"
     },
     "node-uuid/node-uuid-base.d.ts": {
       "commit": "98a9440752f3f2ad7786aba1bf9bdefec818919e"
@@ -30,16 +30,16 @@
       "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
     },
     "async/async.d.ts": {
-      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
+      "commit": "0dd29bf8253536ae24e61c109524e924ea510046"
     },
     "source-map-support/source-map-support.d.ts": {
       "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
     },
     "amqplib/amqplib.d.ts": {
-      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
+      "commit": "0dd29bf8253536ae24e61c109524e924ea510046"
     },
     "when/when.d.ts": {
-      "commit": "ac5cd185d007f6aacd6eeaaecfb75dae3ff59553"
+      "commit": "0dd29bf8253536ae24e61c109524e924ea510046"
     }
   }
 }
