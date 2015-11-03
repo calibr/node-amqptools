@@ -1,102 +1,50 @@
 /// <reference path="../typings/tsd.d.ts" />
 
 import amqpLib = require("amqplib/callback_api")
-import eventManager = require("./eventEmitter")
-import rpcManager = require("./rpc")
-import taskManager = require("./task")
+import eventManager = require("./EventEmitter")
+import rpcManager = require("./RPCManager")
+import taskManager = require("./taskManager")
 import async = require("async")
+import Promise = require("bluebird");
+import ChannelManager = require("./ChannelManager");
 
 require('source-map-support').install();
 
-class ChannelManager {
-  connectionURI: string;
-  channel:amqpLib.Channel;
-  connection: amqpLib.Connection;
-
-  private connectCallbacks:((err:Error, channel:amqpLib.Channel) => void)[];
-  private connectInProgress:boolean;
+class AMQPManager {
+  channelManager:ChannelManager;
 
   constructor() {
-    this.connectCallbacks = [];
+    this.channelManager = new ChannelManager();
   }
 
   get events() {
-    eventManager.channelManager = this;
+    eventManager.channelManager = this.channelManager;
     return eventManager;
   }
 
   get rpc() {
-    rpcManager.channelManager = this;
+    rpcManager.channelManager = this.channelManager;
     return rpcManager;
   }
 
   get tasks() {
-    taskManager.channelManager = this;
+    taskManager.channelManager = this.channelManager;
     return taskManager;
   }
 
-
-  connect(cb) {
-    if (this.channel) {
-      return cb(null, this.channel);
-    }
-
-    this.connectCallbacks.push(cb);
-    if (this.connectInProgress) return;
-    this.connectInProgress = true;
-
-    amqpLib.connect(this.connectionURI, (err, connection) => {
-      if (err) return this.connectRespond(err, null);
-      this.connection = connection;
-      this.connection.createChannel((err, channel) => {
-        if (err) return this.connectRespond(err, null);
-
-        eventManager.setChannel(channel);
-        rpcManager.setChannel(channel);
-        this.channel = channel;
-
-        this.connectRespond(null, this.channel)
-      });
-    });
-  }
-
-  connectRespond(err, channel) {
-    this.connectInProgress = false;
-
-    this.connectCallbacks.forEach((extraCb) => {
-      extraCb(err, channel);
-    });
-    this.connectCallbacks = [];
-  }
-
   setConnectionURI(uri) {
-    this.connectionURI = uri;
+    this.channelManager.setConnectionURI(uri);
   }
 
   disconnect(cb) {
-    if (!this.connection) {
-      return cb();
-    }
-    this.connection.close(() => {
-      this.connection = null;
-      this.channel = null;
-      cb();
-    });
+    this.channelManager.disconnect(cb);
   }
 
   reconnect(cb?) {
-    if (!this.connection) {
-      return this.connect(cb);
-    }
-
-    this.connection.close(() => {
-      this.connection = null;
-      this.channel = null;
-      this.connect(cb);
-    });
+    this.channelManager.reconnect(cb);
   }
 }
 
-var channelManager = new ChannelManager();
+var amqpManager = new AMQPManager();
 
-export = channelManager;
+export = amqpManager;
