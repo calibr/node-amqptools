@@ -7,11 +7,13 @@ import taskManager = require("./TaskManager")
 import async = require("async")
 import Promise = require("bluebird");
 import ChannelManager = require("./ChannelManager");
+import { TaskManager } from "./TaskManager";
 
 require('source-map-support').install();
 
 class AMQPManager {
   channelManager:ChannelManager;
+  private taskManager;
 
   constructor() {
     this.channelManager = new ChannelManager();
@@ -28,8 +30,11 @@ class AMQPManager {
   }
 
   get tasks() {
-    taskManager.channelManager = this.channelManager;
-    return taskManager;
+    TaskManager.channelManager = this.channelManager;
+    if (!this.taskManager) {
+      this.taskManager = new TaskManager();
+    }
+    return this.taskManager;
   }
 
   setConnectionURI(uri) {
