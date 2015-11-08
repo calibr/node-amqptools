@@ -8,6 +8,10 @@ import async = require("async")
 import Promise = require("bluebird");
 import ChannelManager = require("./ChannelManager");
 import { TaskManager } from "./TaskManager";
+import { Event } from "./Event";
+import { EventListener } from "./EventListener";
+import {EventListenerConstructorOptions} from "./EventListener";
+import {EventConstructorOptions} from "./Event";
 
 require('source-map-support').install();
 
@@ -35,6 +39,16 @@ class AMQPManager {
       this.taskManager = new TaskManager();
     }
     return this.taskManager;
+  }
+
+  createEvent(options: EventConstructorOptions) {
+    Event.channelManager = this.channelManager;
+    return new Event(options);
+  }
+
+  createEventListener(options: EventListenerConstructorOptions) {
+    EventListener.channelManager = this.channelManager;
+    return new EventListener(options);
   }
 
   setConnectionURI(uri) {

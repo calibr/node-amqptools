@@ -3,13 +3,14 @@
 import ChannelManager = require("./ChannelManager");
 import { Event } from "./Event";
 const EXCHANGE_PREFIX = "nimbus:event:";
+const EXCHANGE_ALL_EVENTS = "nimbus:events";
 const QUEUE_PREFIX = "nimbus:listener:";
 const QUEUE_OPTIONS =  { durable: false, autoDelete: true, exclusive: true};
-const EXCHANGE_OPTIONS = { durable: false, autoDelete: true };
+const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
 
 export interface EventListenerConstructorOptions {
-  channelManager: ChannelManager
-  exchange: string;
+  channelManager?: ChannelManager
+  exchange?: string;
   runtime?: string;
   topic?: string;
 }
@@ -25,7 +26,7 @@ export class EventListener {
     this.exchange = options.exchange;
     this.topic = options.topic;
     if (options.runtime) this.queue = QUEUE_PREFIX + options.runtime;
-    EventListener.channelManager = options.channelManager;
+    if (options.channelManager) EventListener.channelManager = options.channelManager;
   }
 
   static getChannel() {
@@ -33,11 +34,16 @@ export class EventListener {
   }
 
   get fullExchangeName(): string {
-    return EXCHANGE_PREFIX + this.exchange;
+    return this.exchange ? EXCHANGE_PREFIX + this.exchange : EXCHANGE_ALL_EVENTS;
   }
 
   get queueName(): string {
     return this.queue;
+  }
+
+  get routeKey(): string {
+    if (!this.topic && !this.exchange) return '#';
+    return (this.exchange  ? this.exchange : '*') + '.' + (this.topic  ? this.topic : '*');
   }
 
   set queueName(val: string) {
@@ -47,7 +53,7 @@ export class EventListener {
   private assertExchange(channelPromise) {
     return channelPromise.then((channel) => {
       return new Promise((resolve, reject) => {
-        channel.assertExchange(this.fullExchangeName, "direct", EXCHANGE_OPTIONS,
+        channel.assertExchange(this.fullExchangeName, "topic", EXCHANGE_OPTIONS,
           (err) => err ? reject(err) : resolve(channel));
       })
     })
@@ -68,7 +74,7 @@ export class EventListener {
   private bindQueue(channelPromise) {
     return channelPromise.then((channel) => {
       return new Promise((resolve, reject) => {
-        channel.bindQueue(this.queueName, this.fullExchangeName, this.topic, {},
+        channel.bindQueue(this.queueName, this.fullExchangeName, this.routeKey, {},
           (err) => err ? reject(err) : resolve(channel));
       })
     })
