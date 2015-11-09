@@ -1,6 +1,6 @@
 {
   "name": "amqptools",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "AMQP Tools",
   "author": "calibr<calibr@gmail.com>",
   "contributors": [
@@ -14,12 +14,6 @@
     "rpc",
     "tasks",
     "events"
-  ],
-  "files": [
-    "lib/events.js",
-    "lib/tasks.js",
-    "lib/index.js",
-    "lib/rpc.js"
   ],
   "scripts": {
     "test": "grunt; mocha lib --require source-map-support/register --recursive"
