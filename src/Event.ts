@@ -1,12 +1,9 @@
-/// <reference path="../typings/tsd.d.ts" />
-
-import ChannelManager = require("./ChannelManager");
+import { channelManager } from './ChannelManager'
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
 const EXCHANGE_OPTIONS = {durable: true, autoDelete: false};
 
 export interface EventConstructorOptions {
-  channelManager?: ChannelManager
   exchange: string;
   topic: string;
 }
@@ -14,20 +11,14 @@ export interface EventConstructorOptions {
 export class Event {
   exchange:string;
   topic:string;
-  static channelManager;
 
   constructor(options:EventConstructorOptions) {
-    if (options.channelManager) Event.channelManager = options.channelManager;
     this.exchange = options.exchange;
     this.topic = options.topic ? options.topic : 'nimbusEvent';
   }
 
   send(object:any) {
     return this.sendString(this.prepareMessage(object));
-  }
-
-  static getChannel() {
-    return Event.channelManager.getChannel();
   }
 
   get fullExchangeName():string {
@@ -38,8 +29,8 @@ export class Event {
     return this.exchange + '.' + this.topic
   }
 
-  private assertExchange(channelManager) {
-    return channelManager.then((channel) => {
+  private assertExchange() {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         channel.assertExchange(this.fullExchangeName, "topic", EXCHANGE_OPTIONS,
           (err) => err ? reject(err) : resolve(channel));
@@ -47,8 +38,8 @@ export class Event {
     })
   }
 
-  private assertExchangeForAllEvents(channelManager) {
-    return channelManager.then((channel) => {
+  private assertExchangeForAllEvents() {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         channel.assertExchange(EXCHANGE_ALL_EVENTS, "topic", EXCHANGE_OPTIONS,
           (err) => err ? reject(err) : resolve(channel));
@@ -56,8 +47,8 @@ export class Event {
     })
   }
 
-  private bindToExchangeForAllEvents(channelManager) {
-    return channelManager.then((channel) => {
+  private bindToExchangeForAllEvents() {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         channel.bindExchange(EXCHANGE_ALL_EVENTS, this.fullExchangeName, "#", {},
           (err) => err ? reject(err) : resolve(channel));
@@ -65,12 +56,11 @@ export class Event {
     })
   }
 
-  sendBuffer(buffer:Buffer) {
-    var channelManager = Event.getChannel();
-    return channelManager
-      .then(() => this.assertExchange(channelManager))
-      .then(() => this.assertExchangeForAllEvents(channelManager))
-      .then(() => this.bindToExchangeForAllEvents(channelManager))
+  sendBuffer(buffer) {
+    return channelManager.getChannel()
+      .then(() => this.assertExchange())
+      .then(() => this.assertExchangeForAllEvents())
+      .then(() => this.bindToExchangeForAllEvents())
       .then((channel) => {
         channel.publish(this.fullExchangeName, this.routeKey, buffer, {
           contentType: "text/json"
@@ -78,7 +68,7 @@ export class Event {
       });
   }
 
-  sendString(string:String) {
+  sendString(string:string) {
     return this.sendBuffer(new Buffer(string));
   }
 

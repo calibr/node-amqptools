@@ -1,13 +1,13 @@
-import amqpLib = require("amqplib/callback_api")
+import { Channel, Connection, connect as amqpConnect } from "amqplib/callback_api"
 import Promise = require('bluebird')
 
-class ChannelManager {
+export class ChannelManager {
   connectionURI:string;
-  channel:amqpLib.Channel;
-  channelPromise: Promise<amqpLib.Channel>;
-  connection:amqpLib.Connection;
+  channel:Channel;
+  channelPromise: Promise<Channel>;
+  connection:Connection;
 
-  private connectCallbacks:((err:Error, channel:amqpLib.Channel) => void)[];
+  private connectCallbacks:((err:Error, channel:Channel) => void)[];
   private connectInProgress:boolean;
 
   constructor() {
@@ -23,7 +23,7 @@ class ChannelManager {
     if (this.connectInProgress) return;
     this.connectInProgress = true;
 
-    amqpLib.connect(this.connectionURI, (err, connection) => {
+    amqpConnect(this.connectionURI, (err, connection) => {
       if (err) return this.connectRespond(err, null);
       this.connection = connection;
 
@@ -47,7 +47,7 @@ class ChannelManager {
 
   getChannel() {
     if (!this.channelPromise) {
-      this.channelPromise = new Promise((resolve, reject) => {
+      this.channelPromise = new Promise<Channel>((resolve, reject) => {
         this.connect((err, channel) => {
           if (err) return reject(err);
           resolve(channel);
@@ -80,4 +80,4 @@ class ChannelManager {
   }
 }
 
-export = ChannelManager
+export var channelManager = new ChannelManager();

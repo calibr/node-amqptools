@@ -1,6 +1,4 @@
-/// <reference path="../typings/tsd.d.ts" />
-
-import ChannelManager = require("./ChannelManager");
+import { channelManager } from './ChannelManager'
 import { Event } from "./Event";
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
@@ -9,7 +7,6 @@ const QUEUE_OPTIONS =  { durable: false, autoDelete: true, exclusive: true};
 const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
 
 export interface EventListenerConstructorOptions {
-  channelManager?: ChannelManager
   exchange?: string;
   runtime?: string;
   topic?: string;
@@ -20,17 +17,10 @@ export class EventListener {
   topic: string;
   queue: string;
 
-  static channelManager;
-
   constructor(options: EventListenerConstructorOptions) {
     this.exchange = options.exchange;
     this.topic = options.topic;
     if (options.runtime) this.queue = QUEUE_PREFIX + options.runtime;
-    if (options.channelManager) EventListener.channelManager = options.channelManager;
-  }
-
-  static getChannel() {
-    return EventListener.channelManager.getChannel();
   }
 
   get fullExchangeName(): string {
@@ -50,8 +40,8 @@ export class EventListener {
     this.queue = val;
   }
 
-  private assertExchange(channelPromise) {
-    return channelPromise.then((channel) => {
+  private assertExchange() {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         channel.assertExchange(this.fullExchangeName, "topic", EXCHANGE_OPTIONS,
           (err) => err ? reject(err) : resolve(channel));
@@ -59,8 +49,8 @@ export class EventListener {
     })
   }
 
-  private assertQueue(channelPromise) {
-    return channelPromise.then((channel) => {
+  private assertQueue() {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         channel.assertQueue(this.queueName, QUEUE_OPTIONS, (err, ok) => {
           if (err) return reject(err);
@@ -71,8 +61,8 @@ export class EventListener {
     })
   }
 
-  private bindQueue(channelPromise) {
-    return channelPromise.then((channel) => {
+  private bindQueue() {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         channel.bindQueue(this.queueName, this.fullExchangeName, this.routeKey, {},
           (err) => err ? reject(err) : resolve(channel));
@@ -81,10 +71,9 @@ export class EventListener {
   }
 
   listen(listener: (message) => void) {
-    var channelPromise = EventListener.getChannel();
-    return this.assertExchange(channelPromise)
-      .then(() => this.assertQueue(channelPromise))
-      .then(() => this.bindQueue(channelPromise))
+    return this.assertExchange()
+      .then(() => this.assertQueue())
+      .then(() => this.bindQueue())
       .then((channel) => {
         return new Promise((resolve, reject) => {
           channel.consume(this.queueName, (msg) => {

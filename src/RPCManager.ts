@@ -1,10 +1,8 @@
-/// <reference path="../typings/tsd.d.ts" />
-
 import util = require("util")
 import async = require("async")
 import crypto = require("crypto")
 import randomString = require("just.randomstring")
-import ChannelManager = require("./ChannelManager")
+import { channelManager } from './ChannelManager'
 
 const QUEUE_PREFIX = "_queue_rpc:";
 const CALL_TIMEOUT = 3600 * 1000;
@@ -56,24 +54,19 @@ function _errorPrepare(err) {
   };
 }
 
-interface Processors {
+export interface Processors {
 
 }
 
 class RPC {
   processors:Processors;
-  static channelManager:ChannelManager;
 
   constructor() {
     this.processors = {};
   }
 
-  static getChannel() {
-    return RPC.channelManager.getChannel();
-  }
-
   private createQueue(action, cb?) {
-    return RPC.getChannel().then((channel) => {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         var actionParsed = _parseAction(action);
         channel.assertQueue(actionParsed.queue, {}, (err, attrs) => {
@@ -117,7 +110,7 @@ class RPC {
     var consumerTag;
     async.series([
       (next) => {
-        RPC.channelManager.connect(() => {
+        channelManager.connect(() => {
           next();
         });
       },
@@ -142,7 +135,7 @@ class RPC {
   };
 
   unregister(action, cb?) {
-    return RPC.getChannel().then((channel) => {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         if (!this.processors[action]) {
           process.nextTick(() => resolve(null));
@@ -159,7 +152,7 @@ class RPC {
   };
 
   call(action, params, cb?) {
-    return RPC.getChannel().then((channel) => {
+    return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         if (typeof params === "function") {
           cb = params;
@@ -168,7 +161,7 @@ class RPC {
         var actionParsed = _parseAction(action);
         async.series([
           (next) => {
-            RPC.channelManager.connect(() => {
+            channelManager.connect(() => {
               next();
             });
           },
@@ -227,7 +220,7 @@ class RPC {
   }
 
   static purgeActionQueue(action, cb) {
-    return RPC.getChannel().then((channel) => {
+    return channelManager.getChannel().then((channel) => {
       var actionParsed = _parseAction(action);
       channel.purgeQueue(actionParsed.queue, cb);
     });

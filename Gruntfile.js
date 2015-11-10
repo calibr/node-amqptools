@@ -5,7 +5,8 @@ module.exports = function (grunt) {
   require('jit-grunt')(grunt, {
     ts: 'grunt-ts',
     clean: 'grunt-contrib-clean',
-    copy: 'grunt-contrib-copy'
+    copy: 'grunt-contrib-copy',
+    dtsGenerator: 'dts-generator'
   });
 
   grunt.initConfig({
@@ -23,10 +24,23 @@ module.exports = function (grunt) {
         outDir: "lib"
       }
     },
+    dtsGenerator: {
+      options: {
+        baseDir: '.',
+        name: 'ampqtools',
+        project: 'src/',
+        out: 'lib/ampqtools.d.ts',
+        indent: "  ",
+        files: ['src/index.ts']
+      },
+      default: {
+        src: [ 'src/**/*.ts', 'typings/**/*.ts' ]
+      }
+    },
     copy: {
       build: {
         files: [
-          {expand: true, cwd: 'src/', src: ['**/*', '!**/*.ts'], dest: 'lib/'},
+          {expand: true, cwd: 'src/', src: ['**/*', '!**/*.ts', '!**/*.json'], dest: 'lib/'}
         ]
       }
     },
@@ -44,6 +58,6 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('default', ['clean', 'copy', 'ts']);
+  grunt.registerTask('default', ['clean', 'copy', 'ts', 'dtsGenerator']);
 
 };

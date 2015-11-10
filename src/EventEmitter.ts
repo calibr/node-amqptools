@@ -1,13 +1,10 @@
-/// <reference path="../typings/tsd.d.ts" />
-
-import events = require("events")
-import util = require("util")
-import async = require("async")
-import ChannelManager = require('./ChannelManager')
-import Promise = require('bluebird')
-import { Event } from "./Event";
-import { EventListener } from "./EventListener";
-import {Event} from "./Event";
+import * as events from "events"
+import * as util from "util"
+import * as async from "async"
+import { channelManager } from './ChannelManager'
+import * as Promise from 'bluebird'
+import { Event } from "./Event"
+import { EventListener } from "./EventListener"
 
 var EventEmitter = events.EventEmitter,
   addListenerMethods = ["addListener", "on", "once"],
@@ -25,11 +22,10 @@ interface EventsListeners {
   [index: string]: EventListener
 }
 
-class AMQPEventEmitter {
+class AMQPEventEmitter{
   runtime:string;
   ee:events.EventEmitter;
-  eventsListeners:EventsListeners;
-  static channelManager:ChannelManager;
+  private eventsListeners:EventsListeners;
 
   constructor(runtime) {
     this.runtime = runtime || "";
@@ -59,10 +55,6 @@ class AMQPEventEmitter {
     });
   }
 
-  static getChannel() {
-    return AMQPEventEmitter.channelManager.getChannel();
-  }
-
   private preListen(event, cb) {
     var eParsed = parseEvent(event);
 
@@ -73,7 +65,6 @@ class AMQPEventEmitter {
     var eventListener = new EventListener({
       exchange: eParsed.exchange,
       topic: eParsed.topic,
-      channelManager: AMQPEventEmitter.channelManager,
       runtime: this.runtime
     });
 
@@ -89,14 +80,21 @@ class AMQPEventEmitter {
   emit(event, ...args:any[]) {
     var eParsed = parseEvent(event);
 
-    var event = new Event({
-      channelManager: AMQPEventEmitter.channelManager,
+    var amqpEvent = new Event({
       exchange: eParsed.exchange,
       topic: eParsed.topic
     });
 
-    event.send(args);
+    amqpEvent.send(args);
   };
+
+  addListener(event: string, listener: Function) {};
+  on(event: string, listener: Function) {};
+  once(event: string, listener: Function) {};
+  removeListener(event: string, listener: Function) {};
+  removeAllListeners(event?: string) {};
+  setMaxListeners(n: number) {};
+  listeners(event: string) {};
 }
 
 export = AMQPEventEmitter;
