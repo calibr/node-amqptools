@@ -1,30 +1,30 @@
 import { channelManager } from './ChannelManager'
 import { Event } from "./Event";
-const EXCHANGE_PREFIX = "nimbus:event:";
-const EXCHANGE_ALL_EVENTS = "nimbus:events";
-const QUEUE_PREFIX = "nimbus:listener:";
-const QUEUE_OPTIONS =  { durable: false, autoDelete: true, exclusive: true};
-const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
 
 export interface EventListenerConstructorOptions {
   exchange?: string;
   runtime?: string;
   topic?: string;
+  queuePrefix?: string;
+  queueOptions?: any;
+  exchangeOptions?: any;
 }
 
 export class EventListener {
   exchange: string;
   topic: string;
   queue: string;
+  queuePrefix: string;
+  queueOptions: any;
+  exchangeOptions: any;
 
   constructor(options: EventListenerConstructorOptions) {
     this.exchange = options.exchange;
+    this.queuePrefix = options.queuePrefix;
     this.topic = options.topic;
-    if (options.runtime) this.queue = QUEUE_PREFIX + options.runtime;
-  }
-
-  get fullExchangeName(): string {
-    return this.exchange ? EXCHANGE_PREFIX + this.exchange : EXCHANGE_ALL_EVENTS;
+    this.queueOptions = options.queueOptions;
+    this.exchangeOptions = options.exchangeOptions;
+    if (options.runtime) this.queue = this.queuePrefix + options.runtime + "_" + this.topic;
   }
 
   get queueName(): string {
@@ -32,8 +32,7 @@ export class EventListener {
   }
 
   get routeKey(): string {
-    if (!this.topic && !this.exchange) return '#';
-    return (this.exchange  ? this.exchange : '*') + '.' + (this.topic  ? this.topic : '*');
+    return this.topic;
   }
 
   set queueName(val: string) {
@@ -43,7 +42,7 @@ export class EventListener {
   private assertExchange() {
     return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
-        channel.assertExchange(this.fullExchangeName, "topic", EXCHANGE_OPTIONS,
+        channel.assertExchange(this.exchange, "topic", this.exchangeOptions,
           (err) => err ? reject(err) : resolve(channel));
       })
     })
@@ -52,7 +51,7 @@ export class EventListener {
   private assertQueue() {
     return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
-        channel.assertQueue(this.queueName, QUEUE_OPTIONS, (err, ok) => {
+        channel.assertQueue(this.queueName, this.queueOptions, (err, ok) => {
           if (err) return reject(err);
           this.queueName = ok.queue;
           resolve(channel);
@@ -64,7 +63,7 @@ export class EventListener {
   private bindQueue() {
     return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
-        channel.bindQueue(this.queueName, this.fullExchangeName, this.routeKey, {},
+        channel.bindQueue(this.queueName, this.exchange, this.routeKey, {},
           (err) => err ? reject(err) : resolve(channel));
       })
     })

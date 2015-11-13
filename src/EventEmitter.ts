@@ -5,10 +5,21 @@ import { channelManager } from './ChannelManager'
 import * as Promise from 'bluebird'
 import { Event } from "./Event"
 import { EventListener } from "./EventListener"
+import * as _ from "lodash"
 
 var EventEmitter = events.EventEmitter,
   addListenerMethods = ["addListener", "on", "once"],
-  copyMethods = ["removeListener", "removeAllListeners", "setMaxListeners", "listeners"];
+  copyMethods = ["removeListener", "removeAllListeners", "setMaxListeners", "listeners"],
+  defaultOptions = {
+    exchange: 'nimbus:events',
+    queuePrefix: 'nimbus:listener:'
+  },
+  defaultQueueOptions = {
+    durable: false, autoDelete: true, exclusive: true
+  },
+  defaultExchangeOptions = {
+    durable: true, autoDelete: false
+  };
 
 function parseEvent(event) {
   var tmp = event.split(":");
@@ -22,15 +33,44 @@ interface EventsListeners {
   [index: string]: EventListener
 }
 
+export interface ExchangeOptions {
+  durable?: boolean;
+  autoDelete?: boolean;
+}
+
+export interface QueueOptions {
+  durable?: boolean;
+  autoDelete?: boolean;
+  exclusive?: boolean;
+}
+
+export interface EventEmitterOptions {
+  exchange?: string;
+  queuePrefix?: string;
+  queueOptions?: QueueOptions;
+  exchangeOptions?: ExchangeOptions;
+}
+
 class AMQPEventEmitter{
   runtime:string;
+  options:EventEmitterOptions;
   ee:events.EventEmitter;
   private eventsListeners:EventsListeners;
 
-  constructor(runtime) {
+  constructor(runtime, options?: EventEmitterOptions) {
     this.runtime = runtime || "";
     this.ee = new EventEmitter();
     this.eventsListeners = {};
+    this.options = options || {};
+    if(!this.options.queueOptions) {
+      this.options.queueOptions = {};
+    }
+    if(!this.options.exchangeOptions) {
+      this.options.exchangeOptions = {};
+    }
+    _.defaults(this.options, defaultOptions);
+    _.defaults(this.options.queueOptions, defaultQueueOptions);
+    _.defaults(this.options.exchangeOptions, defaultExchangeOptions);
 
     addListenerMethods.forEach((method) => {
       this[method] = (event, cb, eventSetCb) => {
@@ -63,16 +103,18 @@ class AMQPEventEmitter{
     }
 
     var eventListener = new EventListener({
-      exchange: eParsed.exchange,
-      topic: eParsed.topic,
-      runtime: this.runtime
+      exchange: this.options.exchange,
+      topic: event,
+      runtime: this.runtime,
+      queuePrefix: this.options.queuePrefix,
+      queueOptions: this.options.queueOptions,
+      exchangeOptions: this.options.exchangeOptions,
     });
 
     this.eventsListeners[event] = eventListener;
     return eventListener.listen((message) => {
       var content = message.content,
         args = util.isArray(content) ? [event].concat(content) : [event, content];
-
       this.ee.emit.apply(this.ee, args);
     }).nodeify(cb);
   }
@@ -81,8 +123,9 @@ class AMQPEventEmitter{
     var eParsed = parseEvent(event);
 
     var amqpEvent = new Event({
-      exchange: eParsed.exchange,
-      topic: eParsed.topic
+      exchange: this.options.exchange,
+      topic: event,
+      exchangeOptions: this.options.exchangeOptions
     });
 
     amqpEvent.send(args);

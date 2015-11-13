@@ -58,6 +58,20 @@ module.exports = function (grunt) {
     }
   });
 
+  grunt.task.registerTask("test", function(testName) {
+    var done = this.async();
+    grunt.util.spawn({
+      cmd: "mocha",
+      args: ["test/" + testName, "--bail", "--timeout", 5000],
+      opts: {
+        cwd: __dirname + "/lib",
+        stdio: "inherit"
+      }
+    }, function(text, res) {
+      done(res.code);
+    });
+  });
+
   grunt.registerTask('default', ['clean', 'copy', 'ts', 'dtsGenerator']);
 
 };
