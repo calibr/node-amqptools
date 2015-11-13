@@ -23,17 +23,16 @@ declare module 'ampqtools/Event' {
   export interface EventConstructorOptions {
       exchange: string;
       topic: string;
+      exchangeOptions: any;
   }
   export class Event {
       exchange: string;
       topic: string;
+      exchangeOptions: any;
       constructor(options: EventConstructorOptions);
       send(object: any): any;
-      fullExchangeName: string;
       routeKey: string;
       private assertExchange();
-      private assertExchangeForAllEvents();
-      private bindToExchangeForAllEvents();
       sendBuffer(buffer: any): any;
       sendString(string: string): any;
       prepareMessage(object: any): string;
@@ -45,13 +44,18 @@ declare module 'ampqtools/EventListener' {
       exchange?: string;
       runtime?: string;
       topic?: string;
+      queuePrefix?: string;
+      queueOptions?: any;
+      exchangeOptions?: any;
   }
   export class EventListener {
       exchange: string;
       topic: string;
       queue: string;
+      queuePrefix: string;
+      queueOptions: any;
+      exchangeOptions: any;
       constructor(options: EventListenerConstructorOptions);
-      fullExchangeName: string;
       queueName: string;
       routeKey: string;
       private assertExchange();
@@ -62,11 +66,27 @@ declare module 'ampqtools/EventListener' {
 
 }
 declare module 'ampqtools/EventEmitter' {
-  import * as events from "events"; class AMQPEventEmitter {
+  import * as events from "events";
+  export interface ExchangeOptions {
+      durable?: boolean;
+      autoDelete?: boolean;
+  }
+  export interface QueueOptions {
+      durable?: boolean;
+      autoDelete?: boolean;
+      exclusive?: boolean;
+  }
+  export interface EventEmitterOptions {
+      exchange?: string;
+      queuePrefix?: string;
+      queueOptions?: QueueOptions;
+      exchangeOptions?: ExchangeOptions;
+  } class AMQPEventEmitter {
       runtime: string;
+      options: EventEmitterOptions;
       ee: events.EventEmitter;
       private eventsListeners;
-      constructor(runtime: any);
+      constructor(runtime: any, options?: EventEmitterOptions);
       private preListen(event, cb);
       emit(event: any, ...args: any[]): void;
       addListener(event: string, listener: Function): void;

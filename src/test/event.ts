@@ -1,6 +1,7 @@
 import tools = require("../index")
-import should = require("should")
 import {EventListener} from "../EventListener";
+
+require("should");
 
 tools.setConnectionURI("amqp://localhost");
 
@@ -12,12 +13,13 @@ describe("Events", function() {
   });
 
   it("listener to all events should catch event", function(done) {
-    var listener = tools.createEventListener({});
-    listener.listen((message) => {
+    var listener = new tools.events("someapp-that-listen-to-all-events");
+    listener.on("#", function(data) {
+      data.should.eql({test: 'test'});
       done();
-    }).then(() => {
-      var event = tools.createEvent({exchange: 'note', topic: 'update'});
-      event.send({test: 'test'});
-    })
+    }, function() {
+      var anotherApp = new tools.events("another-app-that-emit-events");
+      anotherApp.emit("some:event:here", {test: 'test'});
+    });
   });
 });

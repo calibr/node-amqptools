@@ -1,4 +1,5 @@
 {
   "undef": true,
-  "node": true
+  "node": true,
+  "mocha": true
 }
