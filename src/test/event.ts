@@ -1,6 +1,7 @@
 import tools = require("../index")
-import should = require("should")
 import {EventListener} from "../EventListener";
+
+require("should");
 
 tools.setConnectionURI("amqp://localhost");
 

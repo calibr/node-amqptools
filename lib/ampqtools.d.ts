@@ -69,9 +69,9 @@ declare module 'ampqtools/EventEmitter' {
       constructor(runtime: any);
       private preListen(event, cb);
       emit(event: any, ...args: any[]): void;
-      addListener(event: string, listener: Function): void;
-      on(event: string, listener: Function): void;
-      once(event: string, listener: Function): void;
+      addListener(event: string, listener: Function, cb?: Function): void;
+      on(event: string, listener: Function, cb?: Function): void;
+      once(event: string, listener: Function, cb?: Function): void;
       removeListener(event: string, listener: Function): void;
       removeAllListeners(event?: string): void;
       setMaxListeners(n: number): void;

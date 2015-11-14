@@ -268,4 +268,56 @@ describe("EventEmitter", function() {
       events.emit("base:topic", data);
     });
   });
+
+  describe("listeners for different events should be called separately #1", function(done) {
+    var events = new tools.events("appl");
+    var listenerOne;
+    var listenerTwo;
+    after(function() {
+      events.removeListener("user:event1", listenerOne);
+      events.removeListener("user:event2", listenerTwo);
+    });
+
+    it("should call only listener two", function(done) {
+      listenerOne = function() {
+        setTimeout(function() {
+          done();
+        }, 1000);
+      };
+      listenerTwo = function() {
+        throw new Error("listener two should not be called");
+      };
+      events.on("user:event1", listenerOne, function() {
+        events.on("user:event2", listenerTwo, function() {
+          events.emit("user:event1");
+        });
+      });
+    });
+  });
+
+  describe("listeners for different events should be called separately #2", function(done) {
+    var events = new tools.events("appl");
+    var listenerOne;
+    var listenerTwo;
+    after(function() {
+      events.removeListener("user:event1", listenerOne);
+      events.removeListener("user:event2", listenerTwo);
+    });
+
+    it("should call only listener two", function(done) {
+      listenerOne = function() {
+        throw new Error("listener one should not be called");
+      };
+      listenerTwo = function() {
+        setTimeout(function() {
+          done();
+        }, 1000);
+      };
+      events.on("user:event1", listenerOne, function() {
+        events.on("user:event2", listenerTwo, function() {
+          events.emit("user:event2");
+        });
+      });
+    });
+  });
 });

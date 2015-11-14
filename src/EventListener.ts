@@ -20,7 +20,7 @@ export class EventListener {
   constructor(options: EventListenerConstructorOptions) {
     this.exchange = options.exchange;
     this.topic = options.topic;
-    if (options.runtime) this.queue = QUEUE_PREFIX + options.runtime;
+    if (options.runtime) this.queue = QUEUE_PREFIX + options.runtime + this.exchange + this.topic;
   }
 
   get fullExchangeName(): string {

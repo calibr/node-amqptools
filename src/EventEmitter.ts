@@ -88,9 +88,9 @@ class AMQPEventEmitter{
     amqpEvent.send(args);
   };
 
-  addListener(event: string, listener: Function) {};
-  on(event: string, listener: Function) {};
-  once(event: string, listener: Function) {};
+  addListener(event: string, listener: Function, cb?: Function) {};
+  on(event: string, listener: Function, cb?: Function) {};
+  once(event: string, listener: Function, cb?: Function) {};
   removeListener(event: string, listener: Function) {};
   removeAllListeners(event?: string) {};
   setMaxListeners(n: number) {};
