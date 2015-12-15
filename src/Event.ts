@@ -1,19 +1,30 @@
 import { channelManager } from './ChannelManager'
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
+const EXCHANGE_EVENTS_BY_USER = "nimbus:eventsByUser";
 const EXCHANGE_OPTIONS = {durable: true, autoDelete: false};
 
 export interface EventConstructorOptions {
-  exchange: string;
-  topic: string;
+  exchange: string
+  topic: string
+  userId?: string
+}
+
+export interface Message {
+  exchange: string
+  topic: string
+  userId?: string
+  content: any
 }
 
 export class Event {
   exchange:string;
   topic:string;
+  userId:string;
 
   constructor(options:EventConstructorOptions) {
     this.exchange = options.exchange;
+    this.userId = options.userId;
     this.topic = options.topic ? options.topic : 'nimbusEvent';
   }
 
@@ -22,11 +33,12 @@ export class Event {
   }
 
   get fullExchangeName():string {
+    if (this.userId) return EXCHANGE_EVENTS_BY_USER;
     return EXCHANGE_PREFIX + this.exchange;
   }
 
   get routeKey(): string {
-    return this.exchange + '.' + this.topic
+    return this.exchange + '.' + this.topic + (this.userId ? '.' + this.userId : '');
   }
 
   private assertExchange() {
@@ -40,6 +52,7 @@ export class Event {
 
   private assertExchangeForAllEvents() {
     return channelManager.getChannel().then((channel) => {
+      if (this.userId) return channel;
       return new Promise((resolve, reject) => {
         channel.assertExchange(EXCHANGE_ALL_EVENTS, "topic", EXCHANGE_OPTIONS,
           (err) => err ? reject(err) : resolve(channel));
@@ -49,6 +62,7 @@ export class Event {
 
   private bindToExchangeForAllEvents() {
     return channelManager.getChannel().then((channel) => {
+      if (this.userId) return channel;
       return new Promise((resolve, reject) => {
         channel.bindExchange(EXCHANGE_ALL_EVENTS, this.fullExchangeName, "#", {},
           (err) => err ? reject(err) : resolve(channel));
@@ -73,11 +87,13 @@ export class Event {
   }
 
   prepareMessage(object:any) {
-    var message = {
+    var message:Message = {
       exchange: this.exchange,
       topic: this.topic,
       content: object
     };
+
+    if (this.userId) message.userId = this.userId;
 
     return JSON.stringify(message);
   }
