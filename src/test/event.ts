@@ -21,4 +21,38 @@ describe("Events", function() {
       event.send({test: 'test'});
     })
   });
+
+  it("listener to userId event should catch event with userId", function (done) {
+    var listener = tools.createEventListener({userId: 'testUser'});
+    listener.listen((message) => {
+      done();
+    }).then(() => {
+      var event = tools.createEvent({exchange: 'note', topic: 'update', userId: 'testUser'});
+      event.send({test: 'test'});
+    })
+  });
+
+  it("listener to userId event shouldn't catch event without userId", function (done) {
+    var listener = tools.createEventListener({userId: 'testUser'});
+    listener.listen((message) => {
+      done('Error wrong listener');
+    }).then(() => {
+      var event = tools.createEvent({exchange: 'note', topic: 'update'});
+      event.send({test: 'test'});
+    });
+
+    setTimeout(done, 500);
+  });
+
+  it("listener to userId event shouldn't catch event with other userId", function (done) {
+    var listener = tools.createEventListener({userId: 'testUser'});
+    listener.listen((message) => {
+      done('Error wrong listener');
+    }).then(() => {
+      var event = tools.createEvent({exchange: 'note', topic: 'update', userId: 'anotherUser'});
+      event.send({test: 'test'});
+    });
+
+    setTimeout(done, 500);
+  })
 });

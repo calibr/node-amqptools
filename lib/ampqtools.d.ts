@@ -23,10 +23,18 @@ declare module 'ampqtools/Event' {
   export interface EventConstructorOptions {
       exchange: string;
       topic: string;
+      userId?: string;
+  }
+  export interface Message {
+      exchange: string;
+      topic: string;
+      userId?: string;
+      content: any;
   }
   export class Event {
       exchange: string;
       topic: string;
+      userId: string;
       constructor(options: EventConstructorOptions);
       send(object: any): any;
       fullExchangeName: string;
@@ -45,11 +53,13 @@ declare module 'ampqtools/EventListener' {
       exchange?: string;
       runtime?: string;
       topic?: string;
+      userId?: string;
   }
   export class EventListener {
       exchange: string;
       topic: string;
       queue: string;
+      userId: string;
       constructor(options: EventListenerConstructorOptions);
       fullExchangeName: string;
       queueName: string;

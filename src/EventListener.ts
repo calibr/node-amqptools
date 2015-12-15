@@ -2,6 +2,7 @@ import { channelManager } from './ChannelManager'
 import { Event } from "./Event";
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
+const EXCHANGE_EVENTS_BY_USER = "nimbus:eventsByUser";
 const QUEUE_PREFIX = "nimbus:listener:";
 const QUEUE_OPTIONS =  { durable: false, autoDelete: true, exclusive: true};
 const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
@@ -10,20 +11,26 @@ export interface EventListenerConstructorOptions {
   exchange?: string;
   runtime?: string;
   topic?: string;
+  userId?: string;
 }
 
 export class EventListener {
   exchange: string;
   topic: string;
   queue: string;
+  userId: string;
 
   constructor(options: EventListenerConstructorOptions) {
     this.exchange = options.exchange;
     this.topic = options.topic;
+    this.userId = options.userId;
     if (options.runtime) this.queue = QUEUE_PREFIX + options.runtime + this.exchange + this.topic;
   }
 
   get fullExchangeName(): string {
+    if (this.userId) {
+      return EXCHANGE_EVENTS_BY_USER;
+    }
     return this.exchange ? EXCHANGE_PREFIX + this.exchange : EXCHANGE_ALL_EVENTS;
   }
 
@@ -32,8 +39,11 @@ export class EventListener {
   }
 
   get routeKey(): string {
-    if (!this.topic && !this.exchange) return '#';
-    return (this.exchange  ? this.exchange : '*') + '.' + (this.topic  ? this.topic : '*');
+    if (!this.topic && !this.exchange && !this.userId) return '#';
+    return [this.exchange, this.topic]
+      .map(str => (str  ? str : '*'))
+      .join('.')
+      .concat(this.userId ? '.' + this.userId : '');
   }
 
   set queueName(val: string) {
