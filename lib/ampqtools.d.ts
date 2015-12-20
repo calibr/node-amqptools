@@ -60,6 +60,7 @@ declare module 'ampqtools/EventListener' {
       topic: string;
       queue: string;
       userId: string;
+      private queueOptions;
       constructor(options: EventListenerConstructorOptions);
       fullExchangeName: string;
       queueName: string;
@@ -141,6 +142,7 @@ declare module 'ampqtools/TaskManager' {
 declare module 'ampqtools/index' {
   import eventManager = require('ampqtools/EventEmitter');
   import rpcManager = require('ampqtools/RPCManager');
+  import { TaskManager } from 'ampqtools/TaskManager';
   import { Event } from 'ampqtools/Event';
   import { EventListener } from 'ampqtools/EventListener';
   import { EventListenerConstructorOptions } from 'ampqtools/EventListener';
@@ -149,7 +151,7 @@ declare module 'ampqtools/index' {
       private taskManager;
       events: typeof eventManager;
       rpc: typeof rpcManager;
-      tasks: any;
+      tasks: TaskManager;
       createEvent(options: EventConstructorOptions): Event;
       createEventListener(options: EventListenerConstructorOptions): EventListener;
       setConnectionURI(uri: any): void;

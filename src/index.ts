@@ -14,7 +14,7 @@ import { EventConstructorOptions } from "./Event";
 require('source-map-support').install();
 
 export class AMQPManager {
-  private taskManager;
+  private taskManager: TaskManager;
 
   get events() {
     return eventManager;
@@ -24,7 +24,7 @@ export class AMQPManager {
     return rpcManager;
   }
 
-  get tasks() {
+  get tasks():TaskManager {
     if (!this.taskManager) {
       this.taskManager = new TaskManager();
     }

@@ -1,10 +1,12 @@
 import { channelManager } from './ChannelManager'
 import { Event } from "./Event";
+import {Options} from "amqplib/properties";
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
 const EXCHANGE_EVENTS_BY_USER = "nimbus:eventsByUser";
 const QUEUE_PREFIX = "nimbus:listener:";
 const QUEUE_OPTIONS =  { durable: false, autoDelete: true, exclusive: true};
+const QUEUE_RUNTIME_OPTIONS =  { durable: false, autoDelete: true};
 const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
 
 export interface EventListenerConstructorOptions {
@@ -19,12 +21,19 @@ export class EventListener {
   topic: string;
   queue: string;
   userId: string;
+  private queueOptions: Options.AssertQueue;
 
   constructor(options: EventListenerConstructorOptions) {
     this.exchange = options.exchange;
     this.topic = options.topic;
     this.userId = options.userId;
-    if (options.runtime) this.queue = QUEUE_PREFIX + options.runtime + this.exchange + this.topic;
+    this.queueOptions = QUEUE_OPTIONS;
+    if (options.runtime) {
+      this.queue = QUEUE_PREFIX + options.runtime +
+        (this.exchange ? ':' + this.exchange : '') +
+        (this.topic ? ':' + this.topic : '');
+      this.queueOptions = QUEUE_RUNTIME_OPTIONS;
+    }
   }
 
   get fullExchangeName(): string {
@@ -62,7 +71,7 @@ export class EventListener {
   private assertQueue() {
     return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
-        channel.assertQueue(this.queueName, QUEUE_OPTIONS, (err, ok) => {
+        channel.assertQueue(this.queueName, this.queueOptions, (err, ok) => {
           if (err) return reject(err);
           this.queueName = ok.queue;
           resolve(channel);
