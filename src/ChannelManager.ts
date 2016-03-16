@@ -31,6 +31,8 @@ export class ChannelManager {
         if (err) return this.connectRespond(err, null);
         this.channel = channel;
 
+        this.channel.on('error', () => {this.reconnect()});
+
         this.connectRespond(null, this.channel)
       });
     });
@@ -40,12 +42,13 @@ export class ChannelManager {
     this.connectInProgress = false;
 
     this.connectCallbacks.forEach((extraCb) => {
+      if (!extraCb) return;
       extraCb(err, channel);
     });
     this.connectCallbacks = [];
   }
 
-  getChannel() {
+  getChannel(): Promise<Channel> {
     if (!this.channelPromise) {
       this.channelPromise = new Promise<Channel>((resolve, reject) => {
         this.connect((err, channel) => {

@@ -58,7 +58,7 @@ export interface Processors {
 
 }
 
-class RPC {
+export class RPCManager {
   processors:Processors;
 
   constructor() {
@@ -227,6 +227,4 @@ class RPC {
   };
 
 }
-
-export = RPC;
 

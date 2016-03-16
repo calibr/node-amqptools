@@ -1,4 +1,4 @@
-declare module 'ampqtools/ChannelManager' {
+declare module 'amqptools/ChannelManager' {
   import { Channel, Connection } from "amqplib/callback_api";
   import Promise = require('bluebird');
   export class ChannelManager {
@@ -11,7 +11,7 @@ declare module 'ampqtools/ChannelManager' {
       constructor();
       connect(cb: any): any;
       connectRespond(err: any, channel: any): void;
-      getChannel(): any;
+      getChannel(): Promise<Channel>;
       setConnectionURI(uri: any): void;
       disconnect(cb: any): any;
       reconnect(cb?: any): void;
@@ -19,7 +19,7 @@ declare module 'ampqtools/ChannelManager' {
   export var channelManager: ChannelManager;
 
 }
-declare module 'ampqtools/Event' {
+declare module 'amqptools/Event' {
   export interface EventConstructorOptions {
       exchange: string;
       topic: string;
@@ -48,7 +48,7 @@ declare module 'ampqtools/Event' {
   }
 
 }
-declare module 'ampqtools/EventListener' {
+declare module 'amqptools/EventListener' {
   export interface EventListenerConstructorOptions {
       exchange?: string;
       runtime?: string;
@@ -72,8 +72,9 @@ declare module 'ampqtools/EventListener' {
   }
 
 }
-declare module 'ampqtools/EventEmitter' {
-  import * as events from "events"; class AMQPEventEmitter {
+declare module 'amqptools/EventEmitter' {
+  import * as events from "events";
+  export class AMQPEventEmitter {
       runtime: string;
       ee: events.EventEmitter;
       private eventsListeners;
@@ -88,25 +89,10 @@ declare module 'ampqtools/EventEmitter' {
       setMaxListeners(n: number): void;
       listeners(event: string): void;
   }
-  export = AMQPEventEmitter;
 
 }
-declare module 'ampqtools/RPCManager' {
-  export interface Processors {
-  } class RPC {
-      processors: Processors;
-      constructor();
-      private createQueue(action, cb?);
-      register(action: any, cb: any, registerCb: any): boolean;
-      unregister(action: any, cb?: any): any;
-      call(action: any, params: any, cb?: any): any;
-      static purgeActionQueue(action: any, cb: any): any;
-  }
-  export = RPC;
-
-}
-declare module 'ampqtools/Task' {
-  import { TaskManager } from 'ampqtools/TaskManager';
+declare module 'amqptools/Task' {
+  import { TaskManager } from 'amqptools/TaskManager';
   export interface TaskParams {
       title: string;
       data: any;
@@ -119,7 +105,7 @@ declare module 'ampqtools/Task' {
       constructor(type: string, params?: TaskParams);
       exchangeName: string;
       queueName: string;
-      start(done?: any): Task;
+      start(done?: any): this;
       private assertExchange();
       private assertQueue();
       private bindQueue();
@@ -128,8 +114,8 @@ declare module 'ampqtools/Task' {
   }
 
 }
-declare module 'ampqtools/TaskManager' {
-  import { Task, TaskParams } from 'ampqtools/Task';
+declare module 'amqptools/TaskManager' {
+  import { Task, TaskParams } from 'amqptools/Task';
   export class TaskManager {
       service: string;
       constructor();
@@ -139,25 +125,47 @@ declare module 'ampqtools/TaskManager' {
   }
 
 }
-declare module 'ampqtools/index' {
-  import eventManager = require('ampqtools/EventEmitter');
-  import rpcManager = require('ampqtools/RPCManager');
-  import { TaskManager } from 'ampqtools/TaskManager';
-  import { Event } from 'ampqtools/Event';
-  import { EventListener } from 'ampqtools/EventListener';
-  import { EventListenerConstructorOptions } from 'ampqtools/EventListener';
-  import { EventConstructorOptions } from 'ampqtools/Event';
+declare module 'amqptools/RPCManager' {
+  export interface Processors {
+  }
+  export class RPCManager {
+      processors: Processors;
+      constructor();
+      private createQueue(action, cb?);
+      register(action: any, cb: any, registerCb: any): boolean;
+      unregister(action: any, cb?: any): any;
+      call(action: any, params: any, cb?: any): any;
+      static purgeActionQueue(action: any, cb: any): any;
+  }
+
+}
+declare module 'amqptools/AMQPManager' {
+  import { AMQPEventEmitter as eventManager } from 'amqptools/EventEmitter';
+  import { TaskManager } from 'amqptools/TaskManager';
+  import { Event } from 'amqptools/Event';
+  import { EventListener } from 'amqptools/EventListener';
+  import { EventListenerConstructorOptions } from 'amqptools/EventListener';
+  import { EventConstructorOptions } from 'amqptools/Event';
+  import { RPCManager } from 'amqptools/RPCManager';
   export class AMQPManager {
       private taskManager;
       events: typeof eventManager;
-      rpc: typeof rpcManager;
+      rpc: typeof RPCManager;
       tasks: TaskManager;
       createEvent(options: EventConstructorOptions): Event;
       createEventListener(options: EventListenerConstructorOptions): EventListener;
       setConnectionURI(uri: any): void;
       disconnect(cb: any): void;
       reconnect(cb?: any): void;
-  } var amqpManager: AMQPManager;
-  export = amqpManager;
+  }
 
+}
+declare module 'amqptools/index' {
+  import { AMQPManager } from 'amqptools/AMQPManager';
+  export { AMQPManager } from 'amqptools/AMQPManager';
+  export var amqpManager: AMQPManager;
+
+}
+declare module 'amqptools' {
+  export * from 'amqptools/index';
 }

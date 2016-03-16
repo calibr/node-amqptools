@@ -1,5 +1,5 @@
 var
-  tools = require("../index"),
+  tools = require("../index").amqpManager,
   should = require("should"),
   async = require("async");
 

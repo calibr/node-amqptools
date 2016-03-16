@@ -1,5 +1,5 @@
 import { channelManager } from './ChannelManager'
-import { Event } from "./Event";
+import { Channel } from "amqplib/callback_api"
 import {Options} from "amqplib/properties";
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
@@ -82,7 +82,7 @@ export class EventListener {
 
   private bindQueue() {
     return channelManager.getChannel().then((channel) => {
-      return new Promise((resolve, reject) => {
+      return new Promise<Channel>((resolve, reject) => {
         channel.bindQueue(this.queueName, this.fullExchangeName, this.routeKey, {},
           (err) => err ? reject(err) : resolve(channel));
       })

@@ -22,7 +22,7 @@ interface EventsListeners {
   [index: string]: EventListener
 }
 
-class AMQPEventEmitter{
+export class AMQPEventEmitter{
   runtime:string;
   ee:events.EventEmitter;
   private eventsListeners:EventsListeners;
@@ -96,5 +96,3 @@ class AMQPEventEmitter{
   setMaxListeners(n: number) {};
   listeners(event: string) {};
 }
-
-export = AMQPEventEmitter;

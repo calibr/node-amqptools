@@ -27,11 +27,14 @@ module.exports = function (grunt) {
     dtsGenerator: {
       options: {
         baseDir: '.',
-        name: 'ampqtools',
+        name: 'amqptools',
         project: 'src/',
-        out: 'lib/ampqtools.d.ts',
+        out: './lib/amqptools.d.ts',
+        moduleResolution: 'commonjs',
+        target: "es5",
         indent: "  ",
-        files: ['src/index.ts']
+        files: ['src/index.ts'],
+        main: 'amqptools/index'
       },
       default: {
         src: [ 'src/**/*.ts', 'typings/**/*.ts' ]

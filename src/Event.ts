@@ -1,4 +1,6 @@
 import { channelManager } from './ChannelManager'
+import { Channel } from "amqplib/callback_api"
+
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
 const EXCHANGE_EVENTS_BY_USER = "nimbus:eventsByUser";
@@ -63,7 +65,7 @@ export class Event {
   private bindToExchangeForAllEvents() {
     return channelManager.getChannel().then((channel) => {
       if (this.userId) return channel;
-      return new Promise((resolve, reject) => {
+      return new Promise<Channel>((resolve, reject) => {
         channel.bindExchange(EXCHANGE_ALL_EVENTS, this.fullExchangeName, "#", {},
           (err) => err ? reject(err) : resolve(channel));
       })

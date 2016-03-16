@@ -1,5 +1,6 @@
 import { channelManager } from './ChannelManager'
 import { TaskManager } from "./TaskManager"
+import { Channel } from "amqplib/callback_api"
 
 import uuid = require("node-uuid")
 import _ = require("lodash")
@@ -67,7 +68,7 @@ export class Task {
 
   private assertQueue() {
     return channelManager.getChannel().then((channel) => {
-      return new Promise((resolve, reject) => {
+      return new Promise<Channel>((resolve, reject) => {
         channel.assertQueue(this.queueName, JOB_QUEUE_OPTIONS, (err) => {
           if (err) return reject(err);
           resolve(channel);
@@ -88,7 +89,6 @@ export class Task {
       return new Promise((resolve, reject) => {
         channel.checkQueue(this.queueName, (err, ok) => {
           if (err) return resolve(null);
-
           if (ok) {
             return channel.purgeQueue(this.queueName, (err, reply) => {
               if (err) return reject(err);
