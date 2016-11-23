@@ -2,7 +2,7 @@ import { channelManager } from './ChannelManager'
 import { TaskManager } from "./TaskManager"
 import { Channel } from "amqplib/callback_api"
 
-import uuid = require("node-uuid")
+import uuid = require("uuid")
 import _ = require("lodash")
 
 const EXCHANGE_PREFIX = "nimbus:jobs:";
