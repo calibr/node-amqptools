@@ -20,8 +20,12 @@ export class TaskManager {
     return abstractTask.purgeQueue().nodeify(cb);
   }
 
-  processTask(taskType, taskCallback, cb?) {
+  processTask(taskType, taskCallback, opts?, cb?) {
+    if(typeof opts === "function") {
+      cb = opts;
+      opts = {};
+    }
     var abstractTask = new Task(taskType);
-    return abstractTask.processTask(taskCallback).nodeify(cb);
+    return abstractTask.processTask(opts, taskCallback).nodeify(cb);
   }
 }
