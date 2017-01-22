@@ -110,7 +110,7 @@ declare module 'amqptools/Task' {
       private assertQueue();
       private bindQueue();
       purgeQueue(): any;
-      processTask(taskCallback: any): any;
+      processTask(opts: any, taskCallback: any): any;
   }
 
 }
@@ -121,7 +121,7 @@ declare module 'amqptools/TaskManager' {
       constructor();
       createTask(type: string, params: TaskParams): Task;
       purgeQueue(taskType: string, cb?: any): any;
-      processTask(taskType: any, taskCallback: any, cb?: any): any;
+      processTask(taskType: any, taskCallback: any, opts?: any, cb?: any): any;
   }
 
 }
