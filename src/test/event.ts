@@ -98,4 +98,50 @@ describe("Events", function() {
       });
     });
   });
+
+  describe("Manually acked events", () => {
+    var eventListenerListenStub;
+    var eventListener;
+    var events;
+    var listenerFunc = sinon.spy(() => {});
+    var channel = {
+      ack: sinon.spy(() => {})
+    };
+    var amqpMessage = {
+      content: JSON.stringify("hello world")
+    };
+    before(() => {
+      events = new amqpTools.events("app-client");
+      eventListenerListenStub = sinon.stub(EventListener.prototype, "listen", function() {
+        eventListener = this;
+        eventListener.listener = listenerFunc;
+        eventListener.channel = channel;
+        return Promise.resolve();
+      });
+    });
+    after(() => {
+      eventListenerListenStub.restore();
+    });
+
+    it("should set a manually-acked listener", (done) => {
+      return events.on({
+        event: "event-name",
+        autoAck: false
+      }, listenerFunc, () => {
+        eventListenerListenStub.calledOnce.should.equal(true);
+        eventListener.autoAck.should.equal(false);
+        done();
+      });
+    });
+
+    it("should trigger listener with an ack function", () => {
+      eventListener.onMessageReceived(amqpMessage);
+      listenerFunc.calledOnce.should.equal(true);
+      channel.ack.called.should.equal(false);
+      listenerFunc.args[0][0].should.equal("hello world");
+      var extra = listenerFunc.args[0][1];
+      extra.ack();
+      channel.ack.calledOnce.should.equal(true);
+    });
+  });
 });

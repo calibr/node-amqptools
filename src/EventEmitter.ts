@@ -26,6 +26,7 @@ interface EventsListeners {
 interface EventOptions {
   event: string
   persistent?: boolean
+  autoAck?: boolean
 }
 
 export class AMQPEventEmitter{
@@ -82,15 +83,13 @@ export class AMQPEventEmitter{
     var eventListener = new EventListener(options);
 
     this.eventsListeners[event] = eventListener;
-    return eventListener.listen((message) => {
-      var content = message.content,
-        args = util.isArray(content) ? [event].concat(content) : [event, content];
-
-      this.ee.emit.apply(this.ee, args);
+    return eventListener.listen((message, extra) => {
+      var content = message.content;
+      this.ee.emit.call(this.ee, event, content, extra);
     }).nodeify(cb);
   }
 
-  emit(event, ...args:any[]) {
+  emit(event, data) {
     var eParsed = parseEvent(event);
 
     var amqpEvent = new Event({
@@ -98,7 +97,7 @@ export class AMQPEventEmitter{
       topic: eParsed.topic
     });
 
-    amqpEvent.send(args);
+    amqpEvent.send(data);
   };
 
   addListener(event: string|EventOptions, listener: Function, cb?: Function) {};
