@@ -6,6 +6,7 @@ const EXCHANGE_ALL_EVENTS = "nimbus:events";
 const EXCHANGE_EVENTS_BY_USER = "nimbus:eventsByUser";
 const QUEUE_PREFIX = "nimbus:listener:";
 const QUEUE_OPTIONS =  { durable: false, autoDelete: true, exclusive: true};
+const PERSISTENT_QUEUE_OPTIONS = { durable: true, autoDelete: false, exclusive: false};
 const QUEUE_RUNTIME_OPTIONS =  { durable: false, autoDelete: true};
 const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
 
@@ -14,6 +15,7 @@ export interface EventListenerConstructorOptions {
   runtime?: string;
   topic?: string;
   userId?: string;
+  persistent?: boolean;
 }
 
 export class EventListener {
@@ -21,6 +23,8 @@ export class EventListener {
   topic: string;
   queue: string;
   userId: string;
+  // listener queue wont be removed after client disconnects(durable + no auto-delete)
+  persistent: boolean = false;
   private queueOptions: Options.AssertQueue;
 
   constructor(options: EventListenerConstructorOptions) {
@@ -28,11 +32,17 @@ export class EventListener {
     this.topic = options.topic;
     this.userId = options.userId;
     this.queueOptions = QUEUE_OPTIONS;
+    if(options.hasOwnProperty("persistent")) {
+      this.persistent = options.persistent;
+    }
     if (options.runtime) {
       this.queue = QUEUE_PREFIX + options.runtime +
         (this.exchange ? ':' + this.exchange : '') +
         (this.topic ? ':' + this.topic : '');
       this.queueOptions = QUEUE_RUNTIME_OPTIONS;
+      if(this.persistent) {
+        this.queueOptions = PERSISTENT_QUEUE_OPTIONS;
+      }
     }
   }
 

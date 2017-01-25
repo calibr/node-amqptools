@@ -79,7 +79,8 @@ export class Event {
       .then(() => this.bindToExchangeForAllEvents())
       .then((channel) => {
         channel.publish(this.fullExchangeName, this.routeKey, buffer, {
-          contentType: "text/json"
+          contentType: "text/json",
+          persistent: true
         });
       });
   }
