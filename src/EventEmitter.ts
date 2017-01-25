@@ -5,6 +5,7 @@ import { channelManager } from './ChannelManager'
 import * as Promise from 'bluebird'
 import { Event } from "./Event"
 import { EventListener } from "./EventListener"
+import * as _ from "lodash"
 
 var EventEmitter = events.EventEmitter,
   addListenerMethods = ["addListener", "on", "once"],
@@ -22,6 +23,11 @@ interface EventsListeners {
   [index: string]: EventListener
 }
 
+interface EventOptions {
+  event: string
+  persistent?: boolean
+}
+
 export class AMQPEventEmitter{
   runtime:string;
   ee:events.EventEmitter;
@@ -33,11 +39,17 @@ export class AMQPEventEmitter{
     this.eventsListeners = {};
 
     addListenerMethods.forEach((method) => {
-      this[method] = (event, cb, eventSetCb) => {
+      this[method] = (options, cb, eventSetCb) => {
+        if(typeof options === "string") {
+          options = {
+            event: options
+          };
+        }
+        let event = options.event;
         if (["newListener", "removeListener"].indexOf(event) !== -1) {
           return this.ee[method].call(this.ee, event, cb);
         }
-        this.preListen(event, (err) => {
+        this.preListen(options, (err) => {
           if (!err) {
             this.ee[method].call(this.ee, event, cb);
           }
@@ -55,18 +67,19 @@ export class AMQPEventEmitter{
     });
   }
 
-  private preListen(event, cb) {
+  private preListen(options, cb) {
+    var event = options.event;
     var eParsed = parseEvent(event);
 
     if (this.eventsListeners[event]) {
       return cb(null);
     }
-
-    var eventListener = new EventListener({
+    _.extend(options, {
       exchange: eParsed.exchange,
       topic: eParsed.topic,
       runtime: this.runtime
     });
+    var eventListener = new EventListener(options);
 
     this.eventsListeners[event] = eventListener;
     return eventListener.listen((message) => {
@@ -88,9 +101,9 @@ export class AMQPEventEmitter{
     amqpEvent.send(args);
   };
 
-  addListener(event: string, listener: Function, cb?: Function) {};
-  on(event: string, listener: Function, cb?: Function) {};
-  once(event: string, listener: Function, cb?: Function) {};
+  addListener(event: string|EventOptions, listener: Function, cb?: Function) {};
+  on(event: string|EventOptions, listener: Function, cb?: Function) {};
+  once(event: string|EventOptions, listener: Function, cb?: Function) {};
   removeListener(event: string, listener: Function) {};
   removeAllListeners(event?: string) {};
   setMaxListeners(n: number) {};

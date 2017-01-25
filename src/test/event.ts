@@ -1,4 +1,7 @@
 import { amqpManager as amqpTools } from "../index"
+import {EventListener} from "../EventListener"
+import * as sinon from "sinon"
+import * as Promise from "Bluebird";
 
 require("should");
 
@@ -53,5 +56,46 @@ describe("Events", function() {
     });
 
     setTimeout(done, 500);
-  })
+  });
+
+  describe("Listen persistently", () => {
+    var eventListenerListenStub;
+    var eventListener;
+    before(() => {
+      eventListenerListenStub = sinon.stub(EventListener.prototype, "listen", function() {
+        eventListener = this;
+        return Promise.resolve();
+      });
+    });
+    after(() => {
+      eventListenerListenStub.restore();
+    });
+
+    it("should set a persistent listener", (done) => {
+      var events = new amqpTools.events("app-client");
+      return events.on({
+        event: "event-name",
+        persistent: true
+      }, () => {
+      }, () => {
+        eventListenerListenStub.calledOnce.should.equal(true);
+        eventListener.persistent.should.equal(true);
+        eventListener.queueOptions.durable.should.equal(true);
+        eventListener.queueOptions.autoDelete.should.equal(false);
+        done();
+      });
+    });
+
+    it("by default listener should be not persistent", (done) => {
+      eventListenerListenStub.reset();
+      eventListener = null;
+      var events = new amqpTools.events("app-client");
+      return events.on("event-name", () => {
+      }, () => {
+        eventListenerListenStub.calledOnce.should.equal(true);
+        eventListener.persistent.should.equal(false);
+        done();
+      });
+    });
+  });
 });
