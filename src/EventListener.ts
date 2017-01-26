@@ -139,16 +139,7 @@ export class EventListener {
       .then(() => this.bindQueue())
       .then((channel) => {
         this.channel = channel;
-        return new Promise((resolve, reject) => {
-          var ret = channel.consume(this.queueName, this.onMessageReceived, undefined, (err) => {
-            if(err) {
-              reject(err);
-            }
-            else {
-              resolve(null);
-            }
-          });
-        });
+        channel.consume(this.queueName, this.onMessageReceived, undefined);
       });
   }
 }

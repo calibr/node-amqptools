@@ -85,6 +85,10 @@ export class AMQPEventEmitter{
     this.eventsListeners[event] = eventListener;
     return eventListener.listen((message, extra) => {
       var content = message.content;
+      if(Array.isArray(content) && content.length === 1 && content[0].context && content[0].message) {
+        // old formatted message
+        content = content[0];
+      }
       this.ee.emit.call(this.ee, event, content, extra);
     }).nodeify(cb);
   }
