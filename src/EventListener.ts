@@ -16,6 +16,15 @@ export interface EventListenerConstructorOptions {
   topic?: string;
   userId?: string;
   persistent?: boolean;
+  autoAck?: boolean;
+}
+
+export interface MessageExtra {
+  ack?: () => void
+}
+
+export interface ListenerFunc {
+  (message: any, extra: MessageExtra): void
 }
 
 export class EventListener {
@@ -25,7 +34,11 @@ export class EventListener {
   userId: string;
   // listener queue wont be removed after client disconnects(durable + no auto-delete)
   persistent: boolean = false;
+  // auto-ack event message
+  autoAck: boolean = true;
+  private listener: ListenerFunc;
   private queueOptions: Options.AssertQueue;
+  private channel: any;
 
   constructor(options: EventListenerConstructorOptions) {
     this.exchange = options.exchange;
@@ -34,6 +47,9 @@ export class EventListener {
     this.queueOptions = QUEUE_OPTIONS;
     if(options.hasOwnProperty("persistent")) {
       this.persistent = options.persistent;
+    }
+    if(options.hasOwnProperty("autoAck")) {
+      this.autoAck = options.autoAck;
     }
     if (options.runtime) {
       this.queue = QUEUE_PREFIX + options.runtime +
@@ -99,20 +115,40 @@ export class EventListener {
     })
   }
 
-  listen(listener: (message) => void) {
+  private onMessageReceived = (msg) => {
+    var message = JSON.parse(msg.content.toString());
+    var extra: MessageExtra = {};
+    if(this.autoAck) {
+      this.channel.ack(msg);
+    }
+    else {
+      extra.ack = () => {
+        this.channel.ack(msg);
+      };
+    }
+    this.listener(message, extra);
+  }
+
+  listen(listener: (message, extra?) => void) {
+    if(this.listener) {
+      throw new Error("Listener is already set");
+    }
+    this.listener = listener;
     return this.assertExchange()
       .then(() => this.assertQueue())
       .then(() => this.bindQueue())
       .then((channel) => {
+        this.channel = channel;
         return new Promise((resolve, reject) => {
-          channel.consume(this.queueName, (msg) => {
-            var message = JSON.parse(msg.content.toString());
-            listener(message);
-            channel.ack(msg);
+          var ret = channel.consume(this.queueName, this.onMessageReceived, undefined, (err) => {
+            if(err) {
+              reject(err);
+            }
+            else {
+              resolve(null);
+            }
           });
-          resolve(null);
         });
       });
   }
-
 }
