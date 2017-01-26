@@ -50,7 +50,7 @@ export class AMQPEventEmitter{
         if (["newListener", "removeListener"].indexOf(event) !== -1) {
           return this.ee[method].call(this.ee, event, cb);
         }
-        this.preListen(options, (err) => {
+        return this.preListen(options, (err) => {
           if (!err) {
             this.ee[method].call(this.ee, event, cb);
           }
