@@ -1,3 +1,5 @@
+/// <reference path="../typings/index.d.ts" />
+
 import { AMQPManager } from "./AMQPManager";
 
 require('source-map-support').install();

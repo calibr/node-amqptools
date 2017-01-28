@@ -13,15 +13,10 @@ module.exports = function (grunt) {
     pkg: grunt.file.readJSON('package.json'),
     ts: {
       options: {
-        module: "commonjs",
-        target: "es5",
-        failOnTypeErrors: false,
-        fast: 'never',
-        inlineSourceMap: true
+        fast: 'never'
       },
       default: {
-        src: ["src/**/*.ts"],
-        outDir: "lib"
+        tsconfig: true
       }
     },
     dtsGenerator: {
@@ -31,7 +26,7 @@ module.exports = function (grunt) {
         project: 'src/',
         out: './lib/amqptools.d.ts',
         moduleResolution: 'commonjs',
-        target: "es5",
+        target: "es6",
         indent: "  ",
         files: ['src/index.ts'],
         main: 'amqptools/index'

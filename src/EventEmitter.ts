@@ -19,11 +19,11 @@ function parseEvent(event) {
   };
 }
 
-interface EventsListeners {
+export interface EventsListeners {
   [index: string]: EventListener
 }
 
-interface EventOptions {
+export interface EventOptions {
   event: string
   persistent?: boolean
   autoAck?: boolean
