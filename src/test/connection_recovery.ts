@@ -34,6 +34,7 @@ if(fs.existsSync(restartRabbitPath)) {
       }
       before(function(done) {
         this.timeout(20e3);
+        amqpTools.channelManager.randomReconnectionInterval = false;
         amqpTools.reconnect(function() {
           events = new amqpTools.events("some-app");
           events.on("event:recover", listener);

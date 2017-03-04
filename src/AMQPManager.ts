@@ -23,6 +23,10 @@ export class AMQPManager {
     return RPCManager;
   }
 
+  get channelManager() {
+    return channelManager;
+  }
+
   get tasks():TaskManager {
     if (!this.taskManager) {
       this.taskManager = new TaskManager();
