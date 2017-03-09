@@ -10,6 +10,10 @@ const PERSISTENT_QUEUE_OPTIONS = { durable: true, autoDelete: false, exclusive: 
 const QUEUE_RUNTIME_OPTIONS =  { durable: false, autoDelete: true};
 const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
 
+import util = require("util");
+
+var debug = util.debuglog("amqptools");
+
 export interface EventListenerConstructorOptions {
   exchange?: string;
   runtime?: string;
@@ -38,7 +42,6 @@ export class EventListener {
   autoAck: boolean = true;
   private listener: ListenerFunc;
   private queueOptions: Options.AssertQueue;
-  private channel: any;
 
   constructor(options: EventListenerConstructorOptions) {
     this.exchange = options.exchange;
@@ -60,6 +63,12 @@ export class EventListener {
         this.queueOptions = PERSISTENT_QUEUE_OPTIONS;
       }
     }
+    channelManager.on("reconnect", this.onReconnect);
+  }
+
+  onReconnect = () => {
+    debug("Trying to re establish consuming on event queue %s", this.queueName);
+    this.consume();
   }
 
   get fullExchangeName(): string {
@@ -115,18 +124,33 @@ export class EventListener {
     })
   }
 
+  private ack(msg) {
+    return channelManager.getChannel().then((channel) => {
+      channel.ack(msg);
+    });
+  }
+
   private onMessageReceived = (msg) => {
     var message = JSON.parse(msg.content.toString());
     var extra: MessageExtra = {};
     if(this.autoAck) {
-      this.channel.ack(msg);
+      this.ack(msg);
     }
     else {
       extra.ack = () => {
-        this.channel.ack(msg);
+        this.ack(msg);
       };
     }
     this.listener(message, extra);
+  }
+
+  private consume() {
+    return this.assertExchange()
+      .then(() => this.assertQueue())
+      .then(() => this.bindQueue())
+      .then((channel) => {
+        channel.consume(this.queueName, this.onMessageReceived, undefined);
+      });
   }
 
   listen(listener: (message, extra?) => void) {
@@ -134,12 +158,6 @@ export class EventListener {
       throw new Error("Listener is already set");
     }
     this.listener = listener;
-    return this.assertExchange()
-      .then(() => this.assertQueue())
-      .then(() => this.bindQueue())
-      .then((channel) => {
-        this.channel = channel;
-        channel.consume(this.queueName, this.onMessageReceived, undefined);
-      });
+    return this.consume();
   }
 }

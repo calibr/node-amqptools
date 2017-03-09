@@ -23,12 +23,23 @@ export class Task {
   uuid:string;
   type:string;
   params:TaskParams;
+  taskCallback: any;
+  opts: any:
   static taskManager:TaskManager;
 
   constructor(type:string, params?:TaskParams) {
     this.uuid = uuid.v4();
     this.type = type;
     this.params = params;
+
+    channelManager.on("reconnect", this.onReconnect);
+  }
+
+  onReconnect = () => {
+    if(this.taskCallback) {
+      debug("Trying to re establish consuming on task queue %s", this.queueName);
+      this.consume();
+    }
   }
 
   get exchangeName() {
@@ -104,25 +115,33 @@ export class Task {
     });
   }
 
-  processTask(opts, taskCallback) {
-    if(typeof opts === "function") {
-      taskCallback = opts;
-      opts = {};
-    }
-    opts = opts || {};
-    opts.prefetchCount = opts.prefetchCount || 1;
-    var channelPromise = channelManager.getChannel();
-    return channelPromise
+  consume() {
+    return channelManager.getChannel()
       .then(() => this.assertQueue())
       .then((channel) => {
-        channel.prefetch(opts.prefetchCount);
-        debug("Attaching task listener for %s, prefetch=%d", this.type, opts.prefetchCount);
+        channel.prefetch(this.opts.prefetchCount);
+        debug("Attaching task listener for %s, prefetch=%d", this.type, this.opts.prefetchCount);
         channel.consume(this.queueName, (msg) => {
           var taskData = JSON.parse(msg.content.toString());
-          taskCallback(taskData, () => {
+          this.taskCallback(taskData, () => {
             channel.ack(msg);
           })
         }, {noAck: false});
       });
+  }
+
+  processTask(opts, taskCallback) {
+    if(this.taskCallback) {
+      throw new Error("Task callback already set");
+    }
+    if(typeof opts === "function") {
+      taskCallback = opts;
+      opts = {};
+    }
+    this.taskCallback = taskCallback;
+    opts = opts || {};
+    opts.prefetchCount = opts.prefetchCount || 1;
+    this.opts = opts;
+    return this.consume();
   }
 }

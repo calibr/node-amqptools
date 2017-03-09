@@ -101,12 +101,10 @@ describe("Events", function() {
 
   describe("Manually acked events", () => {
     var eventListenerListenStub;
+    var eventListenerAckStub;
     var eventListener;
     var events;
     var listenerFunc = sinon.spy(() => {});
-    var channel = {
-      ack: sinon.spy(() => {})
-    };
     var amqpMessage = {
       content: JSON.stringify("hello world")
     };
@@ -115,12 +113,14 @@ describe("Events", function() {
       eventListenerListenStub = sinon.stub(EventListener.prototype, "listen", function() {
         eventListener = this;
         eventListener.listener = listenerFunc;
-        eventListener.channel = channel;
         return Promise.resolve();
+      });
+      eventListenerAckStub = sinon.stub(EventListener.prototype, "ack", function() {
       });
     });
     after(() => {
       eventListenerListenStub.restore();
+      eventListenerAckStub.restore();
     });
 
     it("should set a manually-acked listener", (done) => {
@@ -137,11 +137,11 @@ describe("Events", function() {
     it("should trigger listener with an ack function", () => {
       eventListener.onMessageReceived(amqpMessage);
       listenerFunc.calledOnce.should.equal(true);
-      channel.ack.called.should.equal(false);
+      eventListenerAckStub.called.should.equal(false);
       listenerFunc.args[0][0].should.equal("hello world");
       var extra = listenerFunc.args[0][1];
       extra.ack();
-      channel.ack.calledOnce.should.equal(true);
+      eventListenerAckStub.calledOnce.should.equal(true);
     });
   });
 });
