@@ -75,7 +75,7 @@ if(fs.existsSync(restartRabbitPath)) {
           // make sure that processor accepts messages
           var task = tasks.createTask("task:recovered_task", {
             title: "test-task"
-          );
+          });
           task.start();
           setTimeout(() => {
             messages.length.should.equal(1);

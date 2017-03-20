@@ -24,7 +24,7 @@ export class Task {
   type:string;
   params:TaskParams;
   taskCallback: any;
-  opts: any:
+  opts: any;
   static taskManager:TaskManager;
 
   constructor(type:string, params?:TaskParams) {
