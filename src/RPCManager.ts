@@ -1,8 +1,9 @@
-import util = require("util")
-import async = require("async")
-import crypto = require("crypto")
-import randomString = require("just.randomstring")
-import { channelManager } from './ChannelManager'
+import util = require("util");
+import async = require("async");
+import crypto = require("crypto");
+import randomString = require("just.randomstring");
+import { channelManager } from './ChannelManager';
+import { promiseNodeify } from './promise-nodeify';
 
 const QUEUE_PREFIX = "_queue_rpc:";
 const CALL_TIMEOUT = 3600 * 1000;
@@ -66,7 +67,7 @@ export class RPCManager {
   }
 
   private createQueue(action, cb?) {
-    return channelManager.getChannel().then((channel) => {
+    let promise = channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         var actionParsed = _parseAction(action);
         channel.assertQueue(actionParsed.queue, {}, (err, attrs) => {
@@ -99,7 +100,9 @@ export class RPCManager {
           });
         });
       })
-    }).nodeify(cb);
+    });
+
+    return promiseNodeify(promise, cb);
   };
 
   register(action, cb, registerCb) {
@@ -135,7 +138,7 @@ export class RPCManager {
   };
 
   unregister(action, cb?) {
-    return channelManager.getChannel().then((channel) => {
+    let promise = channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         if (!this.processors[action]) {
           process.nextTick(() => resolve(null));
@@ -148,11 +151,13 @@ export class RPCManager {
           resolve(null);
         });
       })
-    }).nodeify(cb);
+    });
+
+    return promiseNodeify(promise, cb);
   };
 
   call(action, params, cb?) {
-    return channelManager.getChannel().then((channel) => {
+    let promise = channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
         if (typeof params === "function") {
           cb = params;
@@ -216,7 +221,9 @@ export class RPCManager {
           }
         ]);
       })
-    }).nodeify(cb);
+    });
+
+    return promiseNodeify(promise, cb);
   }
 
   static purgeActionQueue(action, cb) {

@@ -3,7 +3,6 @@
 import { amqpManager as amqpTools } from "../index"
 import {EventListener} from "../EventListener"
 import * as sinon from "sinon"
-import * as Promise from "Bluebird";
 import childProcess = require("child_process");
 import fs = require("fs");
 

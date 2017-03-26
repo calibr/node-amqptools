@@ -1,8 +1,6 @@
-import { Channel, Connection, connect as amqpConnect } from "amqplib/callback_api"
-import Promise = require('bluebird');
+import { Channel, Connection, connect as amqpConnect } from "amqplib/callback_api";
 import { EventEmitter } from "events";
 import util = require('util');
-import _ = require('lodash');
 
 const MAX_LISTENERS = 10000;
 
@@ -43,7 +41,7 @@ export class ChannelManager extends EventEmitter {
         if (reconnections >= this.maxReconnectionAttempts) {
           throw new Error("Fail to establish a connection with rabbitmq");
         }
-        var timeout = this.randomReconnectionInterval ? _.random(1, 10) : 1;
+        var timeout = this.randomReconnectionInterval ? Math.floor(Math.random()*(10-1)) + 1 : 1;
         debug("Next reconnect in %d seconds", timeout);
         setTimeout(tryReconnect, timeout * 1000);
       });

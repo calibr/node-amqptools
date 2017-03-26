@@ -1,11 +1,10 @@
-import * as events from "events"
-import * as util from "util"
-import * as async from "async"
-import { channelManager } from './ChannelManager'
-import * as Promise from 'bluebird'
-import { Event } from "./Event"
-import { EventListener } from "./EventListener"
-import * as _ from "lodash"
+import * as events from "events";
+import * as util from "util";
+import * as async from "async";
+import { channelManager } from './ChannelManager';
+import { Event } from "./Event";
+import { EventListener } from "./EventListener";
+import { promiseNodeify } from './promise-nodeify';
 
 var EventEmitter = events.EventEmitter,
   addListenerMethods = ["addListener", "on", "once"],
@@ -29,10 +28,10 @@ export interface EventOptions {
   autoAck?: boolean
 }
 
-export class AMQPEventEmitter{
-  runtime:string;
-  ee:events.EventEmitter;
-  private eventsListeners:EventsListeners;
+export class AMQPEventEmitter {
+  runtime: string;
+  ee: events.EventEmitter;
+  private eventsListeners: EventsListeners;
 
   constructor(runtime) {
     this.runtime = runtime || "";
@@ -41,7 +40,7 @@ export class AMQPEventEmitter{
 
     addListenerMethods.forEach((method) => {
       this[method] = (options, cb, eventSetCb) => {
-        if(typeof options === "string") {
+        if (typeof options === "string") {
           options = {
             event: options
           };
@@ -62,7 +61,7 @@ export class AMQPEventEmitter{
     });
 
     copyMethods.forEach((method) => {
-      this[method] = (...args:any[]) => {
+      this[method] = (...args: any[]) => {
         this.ee[method].apply(this.ee, args);
       };
     });
@@ -75,22 +74,25 @@ export class AMQPEventEmitter{
     if (this.eventsListeners[event]) {
       return cb(null);
     }
-    _.extend(options, {
+
+    Object.assign(options, {
       exchange: eParsed.exchange,
       topic: eParsed.topic,
       runtime: this.runtime
-    });
+    })
     var eventListener = new EventListener(options);
 
     this.eventsListeners[event] = eventListener;
-    return eventListener.listen((message, extra) => {
+    let promise = eventListener.listen((message, extra) => {
       var content = message.content;
-      if(Array.isArray(content) && content.length === 1 && content[0].context && content[0].message) {
+      if (Array.isArray(content) && content.length === 1 && content[0].context && content[0].message) {
         // old formatted message
         content = content[0];
       }
       this.ee.emit.call(this.ee, event, content, extra);
-    }).nodeify(cb);
+    });
+
+    return promiseNodeify(promise, cb);
   }
 
   emit(event, data) {
@@ -104,11 +106,11 @@ export class AMQPEventEmitter{
     amqpEvent.send(data);
   };
 
-  addListener(event: string|EventOptions, listener: Function, cb?: Function) {};
-  on(event: string|EventOptions, listener: Function, cb?: Function) {};
-  once(event: string|EventOptions, listener: Function, cb?: Function) {};
-  removeListener(event: string, listener: Function) {};
-  removeAllListeners(event?: string) {};
-  setMaxListeners(n: number) {};
-  listeners(event: string) {};
+  addListener(event: string | EventOptions, listener: Function, cb?: Function) { };
+  on(event: string | EventOptions, listener: Function, cb?: Function) { };
+  once(event: string | EventOptions, listener: Function, cb?: Function) { };
+  removeListener(event: string, listener: Function) { };
+  removeAllListeners(event?: string) { };
+  setMaxListeners(n: number) { };
+  listeners(event: string) { };
 }

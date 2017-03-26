@@ -3,7 +3,6 @@ import { TaskManager } from "./TaskManager"
 import { Channel } from "amqplib/callback_api"
 
 import uuid = require("node-uuid")
-import _ = require("lodash")
 import util = require("util")
 
 const EXCHANGE_PREFIX = "nimbus:jobs:";
@@ -58,7 +57,7 @@ export class Task {
       .then(() => this.assertQueue())
       .then(() => this.bindQueue())
       .then((channel) => {
-        var params = _.clone(this.params);
+        let params = JSON.parse(JSON.stringify(this.params));
         params['uuid'] = this.uuid;
         var eventData = new Buffer(JSON.stringify(params));
 
