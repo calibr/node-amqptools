@@ -1,7 +1,6 @@
-import { channelManager } from './ChannelManager'
+import { channelManager } from './ChannelManager';
 import { Task, TaskParams } from "./Task";
-
-import Promise = require("bluebird")
+import { promiseNodeify } from './promise-nodeify';
 
 export class TaskManager {
   service:string;
@@ -17,7 +16,8 @@ export class TaskManager {
 
   purgeQueue(taskType:string, cb?) {
     var abstractTask = new Task(taskType);
-    return abstractTask.purgeQueue().nodeify(cb);
+    let promise = abstractTask.purgeQueue();
+    return promiseNodeify(promise, cb);
   }
 
   processTask(taskType, taskCallback, opts?, cb?) {
@@ -26,6 +26,7 @@ export class TaskManager {
       opts = {};
     }
     var abstractTask = new Task(taskType);
-    return abstractTask.processTask(opts, taskCallback).nodeify(cb);
+    let promise = abstractTask.processTask(opts, taskCallback);
+    return promiseNodeify(promise, cb);
   }
 }

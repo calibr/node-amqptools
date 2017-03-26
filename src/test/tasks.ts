@@ -1,8 +1,5 @@
-/// <reference path="../../typings/tsd.d.ts" />
-
-import { amqpManager as amqpTools } from "../index"
-import should = require("should")
-import bluebird = require("bluebird")
+import { amqpManager as amqpTools } from "../index";
+import should = require("should");
 var taskManager = amqpTools.tasks;
 
 amqpTools.setConnectionURI("amqp://localhost");

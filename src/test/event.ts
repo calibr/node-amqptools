@@ -1,7 +1,6 @@
 import { amqpManager as amqpTools } from "../index"
 import {EventListener} from "../EventListener"
 import * as sinon from "sinon"
-import * as Promise from "Bluebird";
 
 require("should");
 

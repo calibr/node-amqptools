@@ -3,7 +3,6 @@ import { AMQPEventEmitter as eventManager } from "./EventEmitter"
 
 import taskManager = require("./TaskManager")
 import async = require("async")
-import Promise = require("bluebird")
 import { channelManager, ChannelManager } from './ChannelManager'
 import { TaskManager } from "./TaskManager";
 import { Event } from "./Event";

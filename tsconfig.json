@@ -3,14 +3,18 @@
     "target": "es6",
     "module": "commonjs",
     "removeComments": true,
-    "sourceMap": true,
+    "noImplicitAny": false,
     "inlineSources": true,
+    "sourceMap" : true,
     "moduleResolution": "node",
     "outDir": "./lib",
-    "src": ["src/**/*.ts"]
+    "types": [
+      "node",
+      "amqplib",
+      "mocha"
+    ]
   },
   "exclude": [
-    "node_modules",
-    "typings"
+    "node_modules"
   ]
 }
