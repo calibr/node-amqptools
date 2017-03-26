@@ -1,5 +1,3 @@
-/// <reference path="../../typings/tsd.d.ts" />
-
 import { amqpManager as amqpTools } from "../index"
 import should = require("should")
 import bluebird = require("bluebird")
