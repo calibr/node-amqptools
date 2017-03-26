@@ -63,10 +63,9 @@ export class EventListener {
         this.queueOptions = PERSISTENT_QUEUE_OPTIONS;
       }
     }
-    channelManager.on("reconnect", this.onReconnect);
   }
 
-  onReconnect = () => {
+  reconnect() {
     debug("Trying to re establish consuming on event queue %s", this.queueName);
     this.consume();
   }

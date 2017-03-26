@@ -1,8 +1,10 @@
 import { Channel, Connection, connect as amqpConnect } from "amqplib/callback_api"
-import Promise = require('bluebird')
-import {EventEmitter} from "events";
-import util = require('util')
-import _ = require('lodash')
+import Promise = require('bluebird');
+import { EventEmitter } from "events";
+import util = require('util');
+import _ = require('lodash');
+
+const MAX_LISTENERS = 10000;
 
 var debug = util.debuglog("amqptools");
 
@@ -11,19 +13,17 @@ export class ChannelManager extends EventEmitter {
   channel: Channel;
   channelPromise: Promise<Channel>;
   connection: Connection;
-  maxReconnectionAttempts: number;
-  randomReconnectionInterval: boolean;
+  maxReconnectionAttempts = 100;
+  randomReconnectionInterval = true;
 
-  private connectCallbacks:((err:Error, channel:Channel) => void)[];
-  private connectInProgress:boolean;
+  eventListeners: Event
+
+  private connectCallbacks: ((err: Error, channel: Channel) => void)[] = [];
+  private connectInProgress: boolean;
 
   constructor() {
     super();
-    this.connectCallbacks = [];
-
-    // defaults
-    this.maxReconnectionAttempts = 100;
-    this.randomReconnectionInterval = true;
+    this.setMaxListeners(MAX_LISTENERS);
   }
 
   onConnectionClose = (error) => {
@@ -36,11 +36,11 @@ export class ChannelManager extends EventEmitter {
       debug("Reconnection attempt...");
       this.connect((err) => {
         reconnections++;
-        if(!err) {
+        if (!err) {
           this.emit("reconnect");
           return debug("Connection has been restored");
         }
-        if(reconnections >= this.maxReconnectionAttempts) {
+        if (reconnections >= this.maxReconnectionAttempts) {
           throw new Error("Fail to establish a connection with rabbitmq");
         }
         var timeout = this.randomReconnectionInterval ? _.random(1, 10) : 1;
@@ -72,7 +72,7 @@ export class ChannelManager extends EventEmitter {
         }
         this.channel = channel;
 
-        this.channel.on('error', () => {this.reconnect()});
+        this.channel.on('error', () => { this.reconnect() });
 
         this.connectRespond(null, this.channel)
       });
@@ -81,7 +81,7 @@ export class ChannelManager extends EventEmitter {
 
   connectRespond(err, channel) {
     this.connectInProgress = false;
-    if(err) {
+    if (err) {
       debug("Fail to connect...", err);
     }
     else {
@@ -96,7 +96,7 @@ export class ChannelManager extends EventEmitter {
 
   getChannel(): Promise<Channel> {
     return new Promise<Channel>((resolve, reject) => {
-      if(this.channel) {
+      if (this.channel) {
         return resolve(this.channel);
       }
       this.connect((err, channel) => {
