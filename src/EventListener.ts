@@ -42,6 +42,7 @@ export class EventListener {
   autoAck: boolean = true;
   private listener: ListenerFunc;
   private queueOptions: Options.AssertQueue;
+  private consumerTag: string;
 
   constructor(options: EventListenerConstructorOptions) {
     this.exchange = options.exchange;
@@ -63,9 +64,11 @@ export class EventListener {
         this.queueOptions = PERSISTENT_QUEUE_OPTIONS;
       }
     }
+
+    channelManager.on("reconnect", this.onReconnect);
   }
 
-  reconnect() {
+  onReconnect = () => {
     debug("Trying to re establish consuming on event queue %s", this.queueName);
     this.consume();
   }
@@ -144,11 +147,14 @@ export class EventListener {
   }
 
   private consume() {
+    let _this = this;
     return this.assertExchange()
       .then(() => this.assertQueue())
       .then(() => this.bindQueue())
       .then((channel) => {
-        channel.consume(this.queueName, this.onMessageReceived, undefined);
+        channel.consume(this.queueName, this.onMessageReceived, undefined, function (err, ok) {
+          _this.consumerTag = ok.consumerTag;
+        });
       });
   }
 
@@ -158,5 +164,12 @@ export class EventListener {
     }
     this.listener = listener;
     return this.consume();
+  }
+
+  cancel() {
+    channelManager.getChannel().then((channel) => {
+      channel.cancel(this.consumerTag);
+      channelManager.removeListener("reconnect", this.onReconnect);
+    }) 
   }
 }
