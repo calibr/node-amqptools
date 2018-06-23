@@ -49,9 +49,12 @@ export class AMQPEventEmitter {
         if (["newListener", "removeListener"].indexOf(event) !== -1) {
           return this.ee[method].call(this.ee, event, cb);
         }
+        // add listener to the event emitter before attaching to queue in order to be ready if messages are received
+        // before preListen callback is called
+        this.ee[method].call(this.ee, event, cb);
         return this.preListen(options, (err) => {
-          if (!err) {
-            this.ee[method].call(this.ee, event, cb);
+          if (err) {
+            this.ee.removeListener(event, cb);
           }
           if (eventSetCb) {
             eventSetCb(err);
