@@ -21,6 +21,7 @@ export interface EventListenerConstructorOptions {
   userId?: string;
   persistent?: boolean;
   autoAck?: boolean;
+  prefetchCount?: number;
 }
 
 export interface MessageExtra {
@@ -40,6 +41,7 @@ export class EventListener {
   persistent: boolean = false;
   // auto-ack event message
   autoAck: boolean = true;
+  prefetchCount: number;
   private listener: ListenerFunc;
   private queueOptions: Options.AssertQueue;
   private consumerTag: string;
@@ -49,6 +51,7 @@ export class EventListener {
     this.topic = options.topic;
     this.userId = options.userId;
     this.queueOptions = QUEUE_OPTIONS;
+    this.prefetchCount = options.prefetchCount || 1
     if(options.hasOwnProperty("persistent")) {
       this.persistent = options.persistent;
     }
@@ -152,6 +155,7 @@ export class EventListener {
       .then(() => this.assertQueue())
       .then(() => this.bindQueue())
       .then((channel) => {
+        channel.prefetch(this.prefetchCount)
         channel.consume(this.queueName, this.onMessageReceived, undefined, function (err, ok) {
           _this.consumerTag = ok.consumerTag;
         });

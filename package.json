@@ -1,6 +1,6 @@
 {
   "name": "amqptools",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "AMQP Tools",
   "author": "calibr<calibr@gmail.com>",
   "contributors": [
@@ -16,7 +16,8 @@
     "events"
   ],
   "scripts": {
-    "test": "rm -rf lib && tsc ; cp src/test/*.js lib/test/ && mocha lib --require source-map-support/register --recursive"
+    "test": "rm -rf lib && tsc ; cp src/test/*.js lib/test/ && mocha lib --require source-map-support/register --recursive",
+    "build": "tsc"
   },
   "main": "./lib/index.js",
   "dependencies": {
