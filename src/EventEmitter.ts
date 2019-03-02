@@ -26,6 +26,7 @@ export interface EventOptions {
   event: string
   persistent?: boolean
   autoAck?: boolean
+  prefetchCount?: number
 }
 
 export class AMQPEventEmitter {
