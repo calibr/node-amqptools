@@ -158,7 +158,7 @@ export class EventListener {
         channel.prefetch(this.prefetchCount)
         channel.consume(this.queueName, this.onMessageReceived, undefined, function (err, ok) {
           if(err) {
-            console.error("Fail to consume on queue " + this.queueName, err)
+            console.error("Fail to consume on queue " + _this.queueName, err)
             throw err
           }
           _this.consumerTag = ok.consumerTag;
