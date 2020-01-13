@@ -123,8 +123,8 @@ export class Task {
         channel.consume(this.queueName, (msg) => {
           try {
             var taskData = JSON.parse(msg.content.toString());
-            this.taskCallback(taskData, err => {
-              if (err && err.nack) {
+            this.taskCallback(taskData, errRes => {
+              if (errRes && errRes.nack) {
                 // dead letter the message
                 channel.nack(msg, false, false)
               } else {
