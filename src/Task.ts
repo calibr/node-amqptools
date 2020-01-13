@@ -49,7 +49,7 @@ export class Task {
     return JOB_QUEUE_PREFIX + this.type;
   }
 
-  start(done?) {
+  start(cb?) {
     if (!this.params) return;
 
     channelManager.getChannel()
@@ -62,7 +62,7 @@ export class Task {
         var eventData = new Buffer(JSON.stringify(params));
 
         channel.publish(this.exchangeName, this.type, eventData);
-        if (done) done();
+        if (cb) cb();
       });
 
     return this;
@@ -122,8 +122,13 @@ export class Task {
         debug("Attaching task listener for %s, prefetch=%d", this.type, this.opts.prefetchCount);
         channel.consume(this.queueName, (msg) => {
           var taskData = JSON.parse(msg.content.toString());
-          this.taskCallback(taskData, () => {
-            channel.ack(msg);
+          this.taskCallback(taskData, err => {
+            if (err && err.nack) {
+              // dead letter the message
+              channel.nack(msg, false, false)
+            } else {
+              channel.ack(msg)
+            }
           })
         }, {noAck: false});
       });
