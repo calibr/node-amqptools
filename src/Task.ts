@@ -133,6 +133,7 @@ export class Task {
             })
           } catch (err) {
             console.error('Malformed message', msg.content.toString(), err)
+            channel.ack(msg)
           }
         }, {noAck: false});
       });
