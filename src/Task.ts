@@ -121,15 +121,19 @@ export class Task {
         channel.prefetch(this.opts.prefetchCount);
         debug("Attaching task listener for %s, prefetch=%d", this.type, this.opts.prefetchCount);
         channel.consume(this.queueName, (msg) => {
-          var taskData = JSON.parse(msg.content.toString());
-          this.taskCallback(taskData, err => {
-            if (err && err.nack) {
-              // dead letter the message
-              channel.nack(msg, false, false)
-            } else {
-              channel.ack(msg)
-            }
-          })
+          try {
+            var taskData = JSON.parse(msg.content.toString());
+            this.taskCallback(taskData, err => {
+              if (err && err.nack) {
+                // dead letter the message
+                channel.nack(msg, false, false)
+              } else {
+                channel.ack(msg)
+              }
+            })
+          } catch (err) {
+            console.error('Malformed message', msg.content.toString(), err)
+          }
         }, {noAck: false});
       });
   }
