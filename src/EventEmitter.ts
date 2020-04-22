@@ -56,6 +56,11 @@ export class AMQPEventEmitter {
         return this.preListen(options, (err) => {
           if (err) {
             this.ee.removeListener(event, cb);
+            if (!eventSetCb) {
+              // throw error here if no callback is set, it will be right in most of the cases because apps rely heavily
+              // on the rabbitmq connection, no connection means broken app
+              throw err
+            }
           }
           if (eventSetCb) {
             eventSetCb(err);
