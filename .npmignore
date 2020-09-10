@@ -1,0 +1,6 @@
+.DS_Store
+.project
+node-amqptools.sublime-project
+node-amqptools.sublime-workspace
+
+restart_rabbit.sh
