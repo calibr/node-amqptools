@@ -156,7 +156,11 @@ export class AMQPEventEmitter {
   on(event: string | EventOptions, listener: Function, cb?: Function) { };
   once(event: string | EventOptions, listener: Function, cb?: Function) { };
   removeListener(event: string, fn: Function) {
-    this.ee.removeListener(event, this.getListenerForFn(event, fn))
+    const listener = this.getListenerForFn(event, fn)
+    if (!listener) {
+      return
+    }
+    this.ee.removeListener(event, listener)
   }
   removeAllListeners(event?: string) { };
   setMaxListeners(n: number) { };
