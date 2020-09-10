@@ -49,7 +49,12 @@ export class Task {
     return JOB_QUEUE_PREFIX + this.type;
   }
 
+  /* deprecated, use submit instead */
   start(cb?) {
+    return this.submit(cb)
+  }
+
+  submit(cb?) {
     if (!this.params) return;
 
     channelManager.getChannel()
@@ -123,7 +128,9 @@ export class Task {
         channel.consume(this.queueName, (msg) => {
           try {
             var taskData = JSON.parse(msg.content.toString());
+            this.onStartProcesTask(taskData)
             this.taskCallback(taskData, errRes => {
+              this.onEndProcessTask(taskData, errRes)
               if (errRes && errRes.nack) {
                 // dead letter the message
                 channel.nack(msg, false, false)
@@ -132,6 +139,7 @@ export class Task {
               }
             })
           } catch (err) {
+            this.onEndProcessTask(taskData, err)
             console.error('Malformed message', msg.content.toString(), err)
             channel.ack(msg)
           }

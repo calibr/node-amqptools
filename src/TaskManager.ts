@@ -1,13 +1,28 @@
 import { channelManager } from './ChannelManager';
 import { Task, TaskParams } from "./Task";
 import { promiseNodeify } from './promise-nodeify';
+import EventEmitter = require('events')
 
-export class TaskManager {
+export class TaskManager extends EventEmitter {
   service:string;
 
   constructor() {
+    super()
     this.service = "unknown";
     Task.taskManager = this;
+    this.nowProcessingTask = new Map()
+  }
+
+  onStartProcesTask(data) {
+    this.nowProcessingTask.set(data, true)
+
+    this.emit('task-start', data)
+  }
+
+  onEndProcessTask(data, err) {
+    this.nowProcessingTask.delete(data)
+
+    this.emit('task-end', data)
   }
 
   createTask(type:string, params:TaskParams): Task {
