@@ -75,11 +75,17 @@ export class EventListener {
     }
 
     channelManager.on("reconnect", this.onReconnect);
+    channelManager.on("finalize", this.onFinalize);
   }
 
   onReconnect = () => {
     debug("Trying to re establish consuming on event queue %s", this.queueName);
     this.consume();
+  }
+
+  onFinalize = () => {
+    debug("Cancel consuming queue %s because of the finalization process", this.queueName);
+    this.cancel();
   }
 
   get fullExchangeName(): string {
@@ -184,6 +190,7 @@ export class EventListener {
     channelManager.getChannel().then((channel) => {
       channel.cancel(this.consumerTag);
       channelManager.removeListener("reconnect", this.onReconnect);
-    }) 
+      channelManager.removeListener("finalize", this.onFinalize);
+    })
   }
 }

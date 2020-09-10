@@ -52,4 +52,12 @@ export class AMQPManager {
   reconnect(cb?) {
     channelManager.reconnect(cb);
   }
+
+  /**
+   * close all consuming on all the queues
+   * AMQP connection/channel will be kept connected
+   */
+  finalize() {
+    channelManager.finalize();
+  }
 }

@@ -25,6 +25,7 @@ export class Task {
   taskCallback: any;
   opts: any;
   static taskManager:TaskManager;
+  private consumerTask: string
 
   constructor(type:string, params?:TaskParams) {
     this.uuid = uuid.v4();
@@ -32,12 +33,20 @@ export class Task {
     this.params = params;
 
     channelManager.on("reconnect", this.onReconnect);
+    channelManager.on("finalize", this.onFinalize);
   }
 
   onReconnect = () => {
     if(this.taskCallback) {
       debug("Trying to re establish consuming on task queue %s", this.queueName);
       this.consume();
+    }
+  }
+
+  onFinalize = () => {
+    if(this.taskCallback) {
+      debug("Cancel consuming on task queue %s because of the finalization process", this.queueName);
+      this.cancel();
     }
   }
 
@@ -143,8 +152,18 @@ export class Task {
             console.error('Malformed message', msg.content.toString(), err)
             channel.ack(msg)
           }
-        }, {noAck: false});
+        }, {noAck: false}, (err, ok) => {
+          this.consumerTag = ok.consumerTag
+        });
       });
+  }
+
+  cancel() {
+    channelManager.getChannel().then((channel) => {
+      channel.cancel(this.consumerTag);
+      channelManager.removeListener("reconnect", this.onReconnect);
+      channelManager.removeListener("finalize", this.onFinalize);
+    })
   }
 
   processTask(opts, taskCallback) {

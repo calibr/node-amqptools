@@ -115,7 +115,11 @@ export class ChannelManager extends EventEmitter {
     this.connectionURI = uri;
   }
 
-  disconnect(cb) {
+  disconnect(final, cb) {
+    if (typeof final === 'function') {
+      cb = final
+      final = false
+    }
     debug("Disconnecting from the rabbitmq server")
     if (!this.connection) {
       return cb();
@@ -125,8 +129,13 @@ export class ChannelManager extends EventEmitter {
       this.connection = null;
       this.channel = null;
       this.channelPromise = null;
+
       cb();
     });
+  }
+
+  finalize() {
+    this.emit("finalize");
   }
 
   reconnect(cb?) {
