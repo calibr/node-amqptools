@@ -24,9 +24,9 @@ describe("Tasks events", () => {
       });
 
       await wait(1e3)
-      taskManager.nowProcessingTask.size.should.equal(1)
+      taskManager.nowProcessingTasks.size.should.equal(1)
       await wait(3e3)
-      taskManager.nowProcessingTask.size.should.equal(0)
+      taskManager.nowProcessingTasks.size.should.equal(0)
       done()
     })
   })

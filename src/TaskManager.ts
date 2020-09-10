@@ -10,17 +10,17 @@ export class TaskManager extends EventEmitter {
     super()
     this.service = "unknown";
     Task.taskManager = this;
-    this.nowProcessingTask = new Map()
+    this.nowProcessingTasks = new Map()
   }
 
   onStartProcesTask(data) {
-    this.nowProcessingTask.set(data, true)
+    this.nowProcessingTasks.set(data, true)
 
     this.emit('task-start', data)
   }
 
   onEndProcessTask(data, err) {
-    this.nowProcessingTask.delete(data)
+    this.nowProcessingTasks.delete(data)
 
     this.emit('task-end', data)
   }
