@@ -8,7 +8,7 @@ import { promiseNodeify } from './promise-nodeify';
 
 var EventEmitter = events.EventEmitter,
   addListenerMethods = ["addListener", "on", "once"],
-  copyMethods = ["removeListener", "removeAllListeners", "setMaxListeners", "listeners"];
+  copyMethods = ["removeAllListeners", "setMaxListeners", "listeners"];
 
 function parseEvent(event) {
   var tmp = event.split(":");
@@ -68,6 +68,7 @@ export class AMQPEventEmitter {
             this.onEndProcessEvent(args)
           }
         }
+        cb.fn = eventFn
         if (typeof options === "string") {
           options = {
             event: options
@@ -82,7 +83,7 @@ export class AMQPEventEmitter {
         this.ee[method].call(this.ee, event, cb);
         return this.preListen(options, (err) => {
           if (err) {
-            this.ee.removeListener(event, cb);
+            this.removeListener(event, eventFn)
             if (!eventSetCb) {
               // throw error here if no callback is set, it will be right in most of the cases because apps rely heavily
               // on the rabbitmq connection, no connection means broken app
@@ -142,10 +143,21 @@ export class AMQPEventEmitter {
     amqpEvent.send(data);
   };
 
+  getListenerForFn(event: string, fn: Function) {
+    for (const listener of this.ee.listeners(event)) {
+      if (listener.fn === fn) {
+        return listener
+      }
+    }
+    return null
+  }
+
   addListener(event: string | EventOptions, listener: Function, cb?: Function) { };
   on(event: string | EventOptions, listener: Function, cb?: Function) { };
   once(event: string | EventOptions, listener: Function, cb?: Function) { };
-  removeListener(event: string, listener: Function) { };
+  removeListener(event: string, fn: Function) {
+    this.ee.removeListener(event, this.getListenerForFn(event, fn))
+  }
   removeAllListeners(event?: string) { };
   setMaxListeners(n: number) { };
   listeners(event: string) { };
