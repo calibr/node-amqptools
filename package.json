@@ -1,6 +1,6 @@
 {
   "name": "amqptools",
-  "version": "0.20.2",
+  "version": "0.21.0",
   "description": "AMQP Tools",
   "author": "calibr<calibr@gmail.com>",
   "contributors": [
