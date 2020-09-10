@@ -16,7 +16,7 @@
     "events"
   ],
   "scripts": {
-    "test": "rm -rf lib && tsc ; cp src/test/*.js lib/test/ && mocha lib --require source-map-support/register --recursive",
+    "test": "rm -rf lib && tsc ; cp src/test/*.js lib/test/ && mocha lib --require source-map-support/register --recursive --bail",
     "build": "tsc"
   },
   "main": "./lib/index.js",
@@ -33,7 +33,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@types/amqplib": "~0.5.1",
+    "@types/amqplib": "~0.5.13",
     "@types/mocha": "~2.2.40",
     "@types/node": "~7.0.11",
     "@types/should": "~8.1.30",

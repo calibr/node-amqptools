@@ -38,7 +38,7 @@ export class AMQPManager {
   }
 
   createEventListener(options: EventListenerConstructorOptions) {
-    return new EventListener(options);
+    return new EventListener(options, new eventManager('random-event-emitter-' + Math.random()));
   }
 
   setConnectionURI(uri) {

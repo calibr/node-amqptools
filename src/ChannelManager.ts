@@ -50,6 +50,7 @@ export class ChannelManager extends EventEmitter {
   }
 
   connect(cb) {
+    debug("Connecting to the rabbitmq server")
     if (this.channel) {
       return cb(null, this.channel);
     }
@@ -64,13 +65,19 @@ export class ChannelManager extends EventEmitter {
       }
       this.connection = connection;
       this.connection.on("close", this.onConnectionClose);
+      this.connection.on("error", err => {
+        console.error("Received an error with connection to rabbitmq", err)
+      });
       this.connection.createChannel((err, channel) => {
         if (err) {
           return this.connectRespond(err, null);
         }
         this.channel = channel;
 
-        this.channel.on('error', () => { this.reconnect() });
+        this.channel.on('error', err => {
+          debug("Got error on channel: ", err.message, " trying to reconnect")
+          this.reconnect()
+        });
 
         this.connectRespond(null, this.channel)
       });
@@ -109,6 +116,7 @@ export class ChannelManager extends EventEmitter {
   }
 
   disconnect(cb) {
+    debug("Disconnecting from the rabbitmq server")
     if (!this.connection) {
       return cb();
     }

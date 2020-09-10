@@ -1,7 +1,7 @@
 .idea
 
 src/.baseDir.ts
-lib/.baseDir.js
+/lib
 
 node_modules
 .DS_Store

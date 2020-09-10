@@ -33,14 +33,41 @@ export class AMQPEventEmitter {
   runtime: string;
   ee: events.EventEmitter;
   private eventsListeners: EventsListeners;
+  public nowProcessingEvents: Map
+
+  onStartProcesEvent(data) {
+    this.nowProcessingEvents.set(data, true)
+
+    this.emit('event-start', data)
+  }
+
+  onEndProcessEvent(data, err) {
+    this.nowProcessingEvents.delete(data)
+
+    this.emit('event-end', data)
+  }
 
   constructor(runtime) {
     this.runtime = runtime || "";
     this.ee = new EventEmitter();
     this.eventsListeners = {};
+    this.nowProcessingEvents = new Map()
 
     addListenerMethods.forEach((method) => {
-      this[method] = (options, cb, eventSetCb) => {
+      this[method] = (options, eventFn, eventSetCb) => {
+        const cb = (...args) => {
+          this.onStartProcesEvent(args)
+          const listenerResult = eventFn(...args)
+          if (listenerResult instanceof Promise) {
+            listenerResult.then(() => {
+              this.onEndProcessEvent(args)
+            }).catch(() => {
+              this.onEndProcessEvent(args)
+            })
+          } else {
+            this.onEndProcessEvent(args)
+          }
+        }
         if (typeof options === "string") {
           options = {
             event: options
@@ -89,7 +116,7 @@ export class AMQPEventEmitter {
       topic: eParsed.topic,
       runtime: this.runtime
     })
-    var eventListener = new EventListener(options);
+    var eventListener = new EventListener(options, this);
 
     this.eventsListeners[event] = eventListener;
     let promise = eventListener.listen((message, extra) => {
@@ -98,7 +125,7 @@ export class AMQPEventEmitter {
         // old formatted message
         content = content[0];
       }
-      this.ee.emit.call(this.ee, event, content, extra);
+      return this.ee.emit.call(this.ee, event, content, extra);
     });
 
     return promiseNodeify(promise, cb);

@@ -17,11 +17,14 @@ function restartRabbit(done) {
   restarter.stdout.pipe(process.stdout);
   restarter.stderr.pipe(process.stdout);
   restarter.on("close", function() {
-    done();
+    setTimeout(() => {
+      done()
+    }, 2000)
   });
 }
 
-amqpTools.setConnectionURI("amqp://localhost");
+amqpTools.setConnectionURI("amqp://localhost?heartbeat=2");
+amqpTools.channelManager.randomReconnectionInterval = false
 
 if(fs.existsSync(restartRabbitPath)) {
   describe("Connection recovery", function() {
@@ -32,7 +35,7 @@ if(fs.existsSync(restartRabbitPath)) {
         messages.push(message);
       }
       before(function(done) {
-        this.timeout(20e3);
+        this.timeout(40e3);
         amqpTools.channelManager.randomReconnectionInterval = false;
         amqpTools.reconnect(function() {
           events = new amqpTools.events("some-app");
@@ -43,9 +46,7 @@ if(fs.existsSync(restartRabbitPath)) {
             messages.length.should.equal(1);
             messages[0].should.equal("test-event");
             messages = [];
-            restartRabbit(() => {
-              setTimeout(done, 1000);
-            });
+            restartRabbit(done);
           }, 500);
         });
       });
@@ -70,20 +71,22 @@ if(fs.existsSync(restartRabbitPath)) {
         this.timeout(20e3);
         amqpTools.reconnect(function() {
           tasks = amqpTools.tasks;
-          tasks.processTask("task:recovered_task", processor);
-          // make sure that processor accepts messages
-          var task = tasks.createTask("task:recovered_task", {
-            title: "test-task"
-          });
-          task.start();
-          setTimeout(() => {
-            messages.length.should.equal(1);
-            messages[0].title.should.equal("test-task");
-            messages = [];
-            restartRabbit(() => {
-              setTimeout(done, 1000);
+          console.log('Attaching task listener...')
+          tasks.processTask("task:recovered_task", processor, () => {
+            console.log('Attached task listener!')
+            // make sure that processor accepts messages
+            var task = tasks.createTask("task:recovered_task", {
+              title: "test-task"
             });
-          }, 500);
+            task.start(() => {
+              setTimeout(() => {
+                messages.length.should.equal(1);
+                messages[0].title.should.equal("test-task");
+                messages = [];
+                restartRabbit(done);
+              }, 1000);
+            });
+          });
         });
       });
 

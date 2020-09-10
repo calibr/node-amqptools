@@ -1,6 +1,7 @@
 import { channelManager } from './ChannelManager'
 import { Channel } from "amqplib/callback_api"
 import {Options} from "amqplib/properties";
+import { AMQPEventEmitter } from './EventEmitter'
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
 const EXCHANGE_EVENTS_BY_USER = "nimbus:eventsByUser";
@@ -29,7 +30,7 @@ export interface MessageExtra {
 }
 
 export interface ListenerFunc {
-  (message: any, extra: MessageExtra): void
+  (message: any, extra: MessageExtra): void | Promise
 }
 
 export class EventListener {
@@ -45,13 +46,18 @@ export class EventListener {
   private listener: ListenerFunc;
   private queueOptions: Options.AssertQueue;
   private consumerTag: string;
+  private eventEmitter: AMQPEventEmitter;
 
-  constructor(options: EventListenerConstructorOptions) {
+  constructor(options: EventListenerConstructorOptions, eventEmitter: AMQPEventEmitter) {
     this.exchange = options.exchange;
     this.topic = options.topic;
     this.userId = options.userId;
     this.queueOptions = QUEUE_OPTIONS;
     this.prefetchCount = options.prefetchCount || 1
+    if (!eventEmitter) {
+      throw new Error('eventEmitter is required for EventListener')
+    }
+    this.eventEmitter = eventEmitter
     if(options.hasOwnProperty("persistent")) {
       this.persistent = options.persistent;
     }
