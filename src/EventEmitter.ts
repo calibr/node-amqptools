@@ -37,18 +37,12 @@ export class AMQPEventEmitter {
   private trackEventsProcessing: boolean = true
 
   onStartProcesEvent(data) {
-    if (!this.trackEventsProcessing) {
-      return
-    }
     this.nowProcessingEvents.set(data, true)
 
     this.emit('event-start', data)
   }
 
   onEndProcessEvent(data, err) {
-    if (!this.trackEventsProcessing) {
-      return
-    }
     this.nowProcessingEvents.delete(data)
 
     this.emit('event-end', data)
@@ -67,16 +61,24 @@ export class AMQPEventEmitter {
     addListenerMethods.forEach((method) => {
       this[method] = (options, eventFn, eventSetCb) => {
         const cb = (...args) => {
-          this.onStartProcesEvent(args)
+          if (this.trackEventsProcessing) {
+            this.onStartProcesEvent(args)
+          }
           const listenerResult = eventFn(...args)
           if (listenerResult instanceof Promise) {
             listenerResult.then(() => {
-              this.onEndProcessEvent(args)
+              if (this.trackEventsProcessing) {
+                this.onEndProcessEvent(args)
+              }
             }).catch(() => {
-              this.onEndProcessEvent(args)
+              if (this.trackEventsProcessing) {
+                this.onEndProcessEvent(args)
+              }
             })
           } else {
-            this.onEndProcessEvent(args)
+            if (this.trackEventsProcessing) {
+              this.onEndProcessEvent(args)
+            }
           }
         }
         cb.fn = eventFn
