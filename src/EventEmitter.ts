@@ -34,17 +34,28 @@ export class AMQPEventEmitter {
   ee: events.EventEmitter;
   private eventsListeners: EventsListeners;
   public nowProcessingEvents: Map
+  private trackEventsProcessing: boolean = true
 
   onStartProcesEvent(data) {
+    if (!this.trackEventsProcessing) {
+      return
+    }
     this.nowProcessingEvents.set(data, true)
 
     this.emit('event-start', data)
   }
 
   onEndProcessEvent(data, err) {
+    if (!this.trackEventsProcessing) {
+      return
+    }
     this.nowProcessingEvents.delete(data)
 
     this.emit('event-end', data)
+  }
+
+  disableTracking() {
+    this.trackEventsProcessing = false
   }
 
   constructor(runtime) {
