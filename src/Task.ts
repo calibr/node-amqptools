@@ -137,6 +137,9 @@ export class Task {
         channel.consume(this.queueName, (msg) => {
           try {
             var taskData = JSON.parse(msg.content.toString());
+            if (msg.properties && msg.properties.headers) {
+              taskData._headers = msg.properties.headers
+            }
             Task.taskManager.onStartProcesTask(taskData)
             this.taskCallback(taskData, errRes => {
               Task.taskManager.onEndProcessTask(taskData, errRes)
