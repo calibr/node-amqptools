@@ -140,7 +140,11 @@ export class Task {
             Task.taskManager.onStartProcesTask(taskData)
             this.taskCallback(taskData, errRes => {
               Task.taskManager.onEndProcessTask(taskData, errRes)
+              if (errRes) {
+                debug("Task failed: " + errRes.message)
+              }
               if (errRes && errRes.nack) {
+                debug("NACK task for queue" + this.queueName)
                 // dead letter the message
                 channel.nack(msg, false, false)
               } else {
