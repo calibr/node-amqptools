@@ -64,9 +64,9 @@ export class Task {
   }
 
   submit(cb?) {
-    if (!this.params) return;
+    if (!this.params) return Promise.resolve();
 
-    channelManager.getChannel()
+    const promise = channelManager.getChannel()
       .then(() => this.assertExchange())
       .then(() => this.assertQueue())
       .then(() => this.bindQueue())
@@ -79,7 +79,7 @@ export class Task {
         if (cb) cb();
       });
 
-    return this;
+    return promise;
   }
 
   private assertExchange() {
