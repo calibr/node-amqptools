@@ -67,16 +67,27 @@ export class Task {
     if (!this.params) return Promise.resolve();
 
     const promise = channelManager.getChannel()
-      .then(() => this.assertExchange())
-      .then(() => this.assertQueue())
-      .then(() => this.bindQueue())
+      .then(() => {
+        debug('submit', this.uuid, 'got channel')
+        return this.assertExchange()
+      })
+      .then(() => {
+        debug('submit', this.uuid, 'exchange asserted')
+        return this.assertQueue()
+      })
+      .then(() => {
+        debug('submit', this.uuid, 'queue asserted')
+        return this.bindQueue()
+      })
       .then((channel) => {
+        debug('submit', this.uuid, 'queue bound')
         let params = JSON.parse(JSON.stringify(this.params));
         params['uuid'] = this.uuid;
         var eventData = new Buffer(JSON.stringify(params));
 
         channel.publish(this.exchangeName, this.type, eventData);
         if (cb) cb();
+        debug('submit', this.uuid, 'published')
       });
 
     return promise;
