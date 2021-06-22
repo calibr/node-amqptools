@@ -117,8 +117,14 @@ export class Task {
 
   private bindQueue() {
     return channelManager.getChannel().then((channel) => {
-      channel.bindQueue(this.queueName, this.exchangeName, this.type);
-      return channel;
+      return new Promise((resolve, reject) => {
+        channel.bindQueue(this.queueName, this.exchangeName, this.type, {}, (err) => {
+          if (err) {
+            return reject(err)
+          }
+          resolve(channel)
+        });
+      })
     });
   }
 

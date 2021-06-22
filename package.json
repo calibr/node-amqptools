@@ -16,16 +16,16 @@
     "events"
   ],
   "scripts": {
-    "test": "rm -rf lib && tsc ; cp src/test/*.js lib/test/ && mocha lib --require source-map-support/register --recursive --bail",
+    "test": "rm -rf lib && tsc ; cp src/test/*.js lib/test/ && mocha lib --require source-map-support/register --recursive --bail --timeout 30000",
     "build": "tsc"
   },
   "main": "./lib/index.js",
   "dependencies": {
-    "amqplib": "0.6.0",
-    "async": "0.9.0",
+    "amqplib": "0.8.0",
+    "async": "3.2.0",
     "just.randomstring": "^0.1.1",
     "source-map-support": "^0.3.3",
-    "node-uuid": "^1.4.3"
+    "node-uuid": "^1.4.8"
   },
   "repository": {
     "type": "git",
