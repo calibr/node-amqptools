@@ -11,7 +11,7 @@ describe("Finalize tasks", () => {
     taskManager.purgeQueue('finalize-tasks', done);
   });
 
-  it("should not receive task after finalization", async function (done) {
+  it("should not receive task after finalization", async function () {
     this.timeout(15e3)
 
     let receivedTasks = 0
@@ -29,11 +29,10 @@ describe("Finalize tasks", () => {
 
     amqpTools.finalize()
 
+    await wait(500)
     taskManager.createTask('finalize-tasks', {title: "test", data: {value: 1}}).start()
     await wait(500)
 
     receivedTasks.should.equal(1)
-
-    done()
   })
 })

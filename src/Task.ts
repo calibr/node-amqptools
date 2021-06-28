@@ -17,6 +17,7 @@ const debug = util.debuglog("amqptools");
 // exchanges are durable and survive broker restart we don't have to create them every time we submit a message
 const ASSERTED_EXCHANGES_CACHE = {}
 const ASSERTED_QUEUES_CACHE = {}
+const BOUND_QUEUE_CACHE = {}
 
 export interface TaskParams {
   title: string,
@@ -139,12 +140,18 @@ export class Task {
   }
 
   private bindQueue() {
+    const cacheKey = this.queueName + '_' + this.exchangeName + '_' + this.type
+
     return channelManager.getChannel().then((channel) => {
+      if (BOUND_QUEUE_CACHE[cacheKey]) {
+        return channel
+      }
       return new Promise((resolve, reject) => {
         channel.bindQueue(this.queueName, this.exchangeName, this.type, {}, (err) => {
           if (err) {
             return reject(err)
           }
+          BOUND_QUEUE_CACHE[cacheKey] = true
           resolve(channel)
         });
       })
