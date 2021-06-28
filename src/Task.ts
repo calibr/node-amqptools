@@ -143,6 +143,7 @@ export class Task {
     const cacheKey = this.queueName + '_' + this.exchangeName + '_' + this.type
 
     return channelManager.getChannel().then((channel) => {
+      debug('submit', this.uuid, 'got channel for binding')
       if (BOUND_QUEUE_CACHE[cacheKey]) {
         debug('submit', this.uuid, 'no need for binding queue')
         return channel
