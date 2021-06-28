@@ -13,6 +13,11 @@ const JOB_QUEUE_OPTIONS = {durable: true, autoDelete: false};
 
 const debug = util.debuglog("amqptools");
 
+// sometimes asserting exchange/queue takes a lot of time
+// exchanges are durable and survive broker restart we don't have to create them every time we submit a message
+const ASSERTED_EXCHANGES_CACHE = {}
+const ASSERTED_QUEUES_CACHE = {}
+
 export interface TaskParams {
   title: string,
   data: any
@@ -94,10 +99,20 @@ export class Task {
   }
 
   private assertExchange() {
+    const cacheKey = JSON.stringify({
+      name: this.exchangeName,
+      options: EXCHANGE_OPTIONS
+    })
     return channelManager.getChannel().then((channel) => {
+      if (ASSERTED_EXCHANGES_CACHE[cacheKey]) {
+        return channel
+      }
       return new Promise((resolve, reject) => {
         channel.assertExchange(this.exchangeName, 'direct', EXCHANGE_OPTIONS, (err) => {
-          if (err) return reject(err);
+          if (err) {
+            return reject(err)
+          }
+          ASSERTED_EXCHANGES_CACHE[cacheKey] = true
           resolve(channel);
         })
       });
@@ -105,10 +120,18 @@ export class Task {
   }
 
   private assertQueue() {
+    const cacheKey = JSON.stringify({
+      name: this.queueName,
+      options: JOB_QUEUE_OPTIONS
+    })
     return channelManager.getChannel().then((channel) => {
+      if (ASSERTED_QUEUES_CACHE[cacheKey]) {
+        return channel
+      }
       return new Promise<Channel>((resolve, reject) => {
         channel.assertQueue(this.queueName, JOB_QUEUE_OPTIONS, (err) => {
           if (err) return reject(err);
+          ASSERTED_QUEUES_CACHE[cacheKey] = true
           resolve(channel);
         })
       })
