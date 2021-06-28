@@ -144,6 +144,7 @@ export class Task {
 
     return channelManager.getChannel().then((channel) => {
       if (BOUND_QUEUE_CACHE[cacheKey]) {
+        debug('submit', this.uuid, 'no need for binding queue')
         return channel
       }
       debug('submit', this.uuid, 'binding queue')
