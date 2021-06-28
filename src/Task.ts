@@ -146,6 +146,7 @@ export class Task {
       if (BOUND_QUEUE_CACHE[cacheKey]) {
         return channel
       }
+      debug('submit', this.uuid, 'binding queue')
       return new Promise((resolve, reject) => {
         channel.bindQueue(this.queueName, this.exchangeName, this.type, {}, (err) => {
           if (err) {

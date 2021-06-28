@@ -6,6 +6,8 @@ const MAX_LISTENERS = 10000;
 
 var debug = util.debuglog("amqptools");
 
+let channelConnectionLastId = 0
+
 export class ChannelManager extends EventEmitter {
   connectionURI: string;
   channel: Channel;
@@ -104,8 +106,13 @@ export class ChannelManager extends EventEmitter {
       if (this.channel) {
         return resolve(this.channel);
       }
+
+      const connId = ++channelConnectionLastId
+      debug('Connecting to rabbitmq ' + connId)
       this.connect((err, channel) => {
         if (err) return reject(err);
+        channel._amqpToolsId = connId
+        debug('Connected to rabbitmq ' + connId)
         resolve(channel);
       })
     });
@@ -139,6 +146,7 @@ export class ChannelManager extends EventEmitter {
   }
 
   reconnect(cb?) {
+    debug('reconnecting')
     this.disconnect(() => {
       this.connect(cb);
     });
