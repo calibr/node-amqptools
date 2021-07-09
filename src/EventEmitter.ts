@@ -32,7 +32,7 @@ export interface EventOptions {
 export class AMQPEventEmitter {
   runtime: string;
   ee: events.EventEmitter;
-  private eventsListeners: EventsListeners;
+  public eventsListeners: EventsListeners;
   public nowProcessingEvents: Map
   private trackEventsProcessing: boolean = true
 
