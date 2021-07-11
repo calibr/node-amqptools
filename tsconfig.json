@@ -12,7 +12,8 @@
       "node",
       "amqplib",
       "mocha"
-    ]
+    ],
+    "declaration": true
   },
   "exclude": [
     "node_modules"
