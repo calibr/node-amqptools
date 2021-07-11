@@ -4,7 +4,8 @@ import { promiseNodeify } from './promise-nodeify';
 import EventEmitter = require('events')
 
 export class TaskManager extends EventEmitter {
-  service:string;
+  public service: string
+
   public nowProcessingTasks: Map
 
   constructor() {
