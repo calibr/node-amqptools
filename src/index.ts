@@ -1,6 +1,5 @@
 import { AMQPManager } from "./AMQPManager";
 
-export { AMQPManager } from "./AMQPManager";
 export { Task } from "./Task";
 export { TaskManager } from "./TaskManager";
 export { AMQPEventEmitter } from "./EventEmitter";

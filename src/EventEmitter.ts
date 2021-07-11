@@ -33,7 +33,7 @@ export class AMQPEventEmitter {
   runtime: string;
   ee: events.EventEmitter;
   public eventsListeners: EventsListeners;
-  public nowProcessingEvents: Map
+  public nowProcessingEvents: Map<any, boolean>
   private trackEventsProcessing: boolean = true
 
   onStartProcesEvent(data) {
@@ -42,7 +42,7 @@ export class AMQPEventEmitter {
     this.emit('event-start', data)
   }
 
-  onEndProcessEvent(data, err) {
+  onEndProcessEvent(data) {
     this.nowProcessingEvents.delete(data)
 
     this.emit('event-end', data)

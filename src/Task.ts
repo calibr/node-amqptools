@@ -31,7 +31,7 @@ export class Task {
   taskCallback: any;
   opts: any;
   static taskManager:TaskManager;
-  private consumerTask: string
+  private consumerTag: string
 
   constructor(type:string, params?:TaskParams) {
     this.uuid = uuid.v4();
@@ -85,7 +85,7 @@ export class Task {
         debug('submit', this.uuid, 'queue asserted')
         return this.bindQueue()
       })
-      .then((channel) => {
+      .then((channel: any) => {
         debug('submit', this.uuid, 'queue bound')
         let params = JSON.parse(JSON.stringify(this.params));
         params['uuid'] = this.uuid;

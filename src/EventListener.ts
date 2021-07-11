@@ -30,7 +30,7 @@ export interface MessageExtra {
 }
 
 export interface ListenerFunc {
-  (message: any, extra: MessageExtra): void | Promise
+  (message: any, extra: MessageExtra): void | Promise<any>
 }
 
 export class EventListener {
