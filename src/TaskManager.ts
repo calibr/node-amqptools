@@ -5,6 +5,7 @@ import EventEmitter = require('events')
 
 export class TaskManager extends EventEmitter {
   service:string;
+  public nowProcessingTasks: Map
 
   constructor() {
     super()
