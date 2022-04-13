@@ -128,7 +128,8 @@ export class ChannelManager extends EventEmitter {
     this.connectionURI = uri;
   }
 
-  disconnect(final, cb) {
+  disconnect(cb: () => any)
+  disconnect(final: boolean | (() => any), cb?: () => any) {
     if (typeof final === 'function') {
       cb = final
       final = false

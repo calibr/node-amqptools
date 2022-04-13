@@ -29,6 +29,10 @@ export interface EventOptions {
   prefetchCount?: number
 }
 
+interface ListenerFunction extends Function {
+  fn: Function
+}
+
 export class AMQPEventEmitter {
   runtime: string;
   ee: events.EventEmitter;
@@ -157,7 +161,7 @@ export class AMQPEventEmitter {
   };
 
   getListenerForFn(event: string, fn: Function) {
-    for (const listener of this.ee.listeners(event)) {
+    for (const listener of this.ee.listeners(event) as ListenerFunction[]) {
       if (listener.fn === fn) {
         return listener
       }
@@ -173,6 +177,7 @@ export class AMQPEventEmitter {
     if (!listener) {
       return
     }
+    // @ts-ignore
     this.ee.removeListener(event, listener)
   }
   removeAllListeners(event?: string) { };
