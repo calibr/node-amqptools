@@ -8,6 +8,11 @@ var debug = util.debuglog("amqptools");
 
 let channelConnectionLastId = 0
 
+
+/**
+ * @emits finalize when the rabbitmq connection is going to be closed and all the listeners should gracefully stop consuming
+ * @emits error when a fatal error occured with the rabbitmq connection
+ */
 export class ChannelManager extends EventEmitter {
   connectionURI: string;
   channel: Channel;
@@ -69,6 +74,7 @@ export class ChannelManager extends EventEmitter {
       this.connection.on("close", this.onConnectionClose);
       this.connection.on("error", err => {
         console.error("Received an error with connection to rabbitmq", err)
+        this.emit('error', err)
       });
       this.connection.createChannel((err, channel) => {
         if (err) {
