@@ -24,12 +24,17 @@ export interface TaskParams {
   data: any
 }
 
+export interface TaskConsumeOptions {
+  prefetchCount?: number,
+  nackRedelivered?: boolean
+}
+
 export class Task {
   uuid:string;
   type:string;
   params:TaskParams;
   taskCallback: any;
-  opts: any;
+  opts: TaskConsumeOptions;
   static taskManager:TaskManager;
   private consumerTag: string
 
@@ -190,6 +195,12 @@ export class Task {
             if (msg.properties && msg.properties.headers) {
               taskData._headers = msg.properties.headers
             }
+            if (this.opts.nackRedelivered) {
+              if (msg.fields && msg.fields.redelivered) {
+                debug("NACK redelivered message to submit it to the dead letter queue")
+                return channel.nack(msg, false, false)
+              }
+            }
             Task.taskManager.onStartProcesTask(taskData)
             this.taskCallback(taskData, errRes => {
               Task.taskManager.onEndProcessTask(taskData, errRes)
@@ -223,7 +234,7 @@ export class Task {
     })
   }
 
-  processTask(opts, taskCallback) {
+  processTask(opts: TaskConsumeOptions | (() => any), taskCallback?: (() => any)) {
     if(this.taskCallback) {
       throw new Error("Task callback already set");
     }
