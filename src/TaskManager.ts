@@ -1,5 +1,5 @@
 import { channelManager } from './ChannelManager';
-import { Task, TaskParams } from "./Task";
+import { Task, TaskConsumeOptions, TaskParams } from "./Task";
 import { promiseNodeify } from './promise-nodeify';
 import EventEmitter = require('events')
 
@@ -37,7 +37,7 @@ export class TaskManager extends EventEmitter {
     return promiseNodeify(promise, cb);
   }
 
-  processTask(taskType, taskCallback, opts?, cb?) {
+  processTask(taskType, taskCallback, opts?: TaskConsumeOptions, cb?) {
     if(typeof opts === "function") {
       cb = opts;
       opts = {};
