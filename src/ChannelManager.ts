@@ -5,6 +5,7 @@ import util = require('util');
 const MAX_LISTENERS = 10000;
 
 var debug = util.debuglog("amqptools");
+var debug_reconnect = util.debuglog("amqptools:reconnect");
 
 let channelConnectionLastId = 0
 
@@ -31,25 +32,29 @@ export class ChannelManager extends EventEmitter {
     this.setMaxListeners(MAX_LISTENERS);
   }
 
+  setMaxReconnectionAttempts(maxReconnectionAttempts: number) {
+    this.maxReconnectionAttempts = maxReconnectionAttempts;
+  }
+
   onConnectionClose = (error) => {
-    debug("amqp connection has been closed");
+    debug_reconnect("amqp connection has been closed");
     this.channel = null;
     this.connection = null;
     this.channelPromise = null;
     var reconnections = 0;
     var tryReconnect = () => {
-      debug("Reconnection attempt...");
+      debug_reconnect("Reconnection attempt %d of %d...", reconnections, this.maxReconnectionAttempts);
       this.connect((err) => {
         reconnections++;
         if (!err) {
           this.emit("reconnect");
-          return debug("Connection has been restored");
+          return debug_reconnect("Connection has been restored");
         }
         if (reconnections >= this.maxReconnectionAttempts) {
           throw new Error("Fail to establish a connection with rabbitmq");
         }
         var timeout = this.randomReconnectionInterval ? Math.floor(Math.random()*(10-1)) + 1 : 1;
-        debug("Next reconnect in %d seconds", timeout);
+        debug_reconnect("Next reconnect in %d seconds", timeout);
         setTimeout(tryReconnect, timeout * 1000);
       });
     };

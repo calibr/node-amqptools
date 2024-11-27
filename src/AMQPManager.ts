@@ -45,6 +45,15 @@ export class AMQPManager {
     channelManager.setConnectionURI(uri);
   }
 
+  /**
+   * Set masx reconnection attempts when the connection is lost.
+   * Reconnections will happen with a time interval.
+   * @param maxReconnectionAttempts
+   */
+  setMaxReconnectionAttempts(maxReconnectionAttempts: number) {
+    channelManager.setMaxReconnectionAttempts(maxReconnectionAttempts);
+  }
+
   disconnect(cb) {
     channelManager.disconnect(cb);
   }
