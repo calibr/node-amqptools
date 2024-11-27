@@ -46,7 +46,7 @@ export class AMQPManager {
   }
 
   /**
-   * Set masx reconnection attempts when the connection is lost.
+   * Set max reconnection attempts when the connection is lost.
    * Reconnections will happen with a time interval.
    * @param maxReconnectionAttempts
    */

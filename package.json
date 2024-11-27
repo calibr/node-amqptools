@@ -18,7 +18,7 @@
   "scripts": {
     "test": "rm -rf lib && tsc ; cp src/test/*.js lib/test/ && mocha lib --require source-map-support/register --recursive --bail --timeout 30000",
     "build": "tsc",
-    "prepublish": "npm run build"
+    "prepack": "npm run build"
   },
   "main": "./lib/index.js",
   "dependencies": {
