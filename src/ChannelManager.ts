@@ -41,7 +41,7 @@ export class ChannelManager extends EventEmitter {
     this.channel = null;
     this.connection = null;
     this.channelPromise = null;
-    var reconnections = 0;
+    var reconnections = -1;
     var tryReconnect = () => {
       debug_reconnect("Reconnection attempt %d of %d...", reconnections, this.maxReconnectionAttempts);
       this.connect((err) => {
@@ -51,6 +51,7 @@ export class ChannelManager extends EventEmitter {
           return debug_reconnect("Connection has been restored");
         }
         if (reconnections >= this.maxReconnectionAttempts) {
+          debug_reconnect("Reconnections max attempts reached %d", this.maxReconnectionAttempts);
           throw new Error("Fail to establish a connection with rabbitmq");
         }
         var timeout = this.randomReconnectionInterval ? Math.floor(Math.random()*(10-1)) + 1 : 1;
