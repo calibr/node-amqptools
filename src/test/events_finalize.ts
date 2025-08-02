@@ -14,7 +14,7 @@ describe("Finalize events", function() {
     });
   });
 
-  it("after finalization events should not be passed to listener", function(done) {
+  it("after the finalization the events should not be passed to the listener", function(done) {
     this.timeout(15e3)
     const eventEmitter = new amqpTools.events('test-events2')
     const dataReceived = []
@@ -28,6 +28,7 @@ describe("Finalize events", function() {
       dataReceived.length.should.equal(1)
 
       amqpTools.finalize()
+      console.log('Finalizing...')
 
       var event = amqpTools.createEvent({exchange: 'test-finalize', topic: 'event'})
       event.send({test: 'test'})

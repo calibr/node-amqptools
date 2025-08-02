@@ -188,7 +188,12 @@ export class EventListener {
 
   cancel() {
     channelManager.getChannel().then((channel) => {
-      channel.cancel(this.consumerTag);
+      if (this.consumerTag) {
+        debug('Canelling consuming on queue %s with consumerTag', this.queueName, this.consumerTag);
+        channel.cancel(this.consumerTag);
+      } else {
+        debug('Consumer tag is not set, cannot cancel consuming on queue %s', this.queueName);
+      }
       channelManager.removeListener("reconnect", this.onReconnect);
       channelManager.removeListener("finalize", this.onFinalize);
     })

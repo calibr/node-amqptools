@@ -43,13 +43,13 @@ export class AMQPEventEmitter {
   onStartProcesEvent(data) {
     this.nowProcessingEvents.set(data, true)
 
-    this.emit('event-start', data)
+    // this.emit('event-start', data)
   }
 
   onEndProcessEvent(data) {
     this.nowProcessingEvents.delete(data)
 
-    this.emit('event-end', data)
+    // this.emit('event-end', data)
   }
 
   disableTracking() {
