@@ -4,8 +4,7 @@ import util = require('util');
 
 const MAX_LISTENERS = 10000;
 
-var debug = util.debuglog("amqptools");
-var debug_reconnect = util.debuglog("amqptools:reconnect");
+var debug_connect = util.debuglog("amqptools:connect");
 
 let channelConnectionLastId = 0
 
@@ -33,29 +32,30 @@ export class ChannelManager extends EventEmitter {
   }
 
   setMaxReconnectionAttempts(maxReconnectionAttempts: number) {
+    debug_connect("set max reconnection attempts to %d", maxReconnectionAttempts);
     this.maxReconnectionAttempts = maxReconnectionAttempts;
   }
 
   onConnectionClose = (error) => {
-    debug_reconnect("amqp connection has been closed");
+    debug_connect("amqp connection has been closed");
     this.channel = null;
     this.connection = null;
     this.channelPromise = null;
     var reconnections = -1;
     var tryReconnect = () => {
-      debug_reconnect("Reconnection attempt %d of %d...", reconnections, this.maxReconnectionAttempts);
+      debug_connect("Reconnection attempt %d of %d...", reconnections, this.maxReconnectionAttempts);
       this.connect((err) => {
         reconnections++;
         if (!err) {
           this.emit("reconnect");
-          return debug_reconnect("Connection has been restored");
+          return debug_connect("Connection has been restored");
         }
         if (reconnections >= this.maxReconnectionAttempts) {
-          debug_reconnect("Reconnections max attempts reached %d", this.maxReconnectionAttempts);
+          debug_connect("Reconnections max attempts reached %d", this.maxReconnectionAttempts);
           throw new Error("Fail to establish a connection with rabbitmq");
         }
         var timeout = this.randomReconnectionInterval ? Math.floor(Math.random()*(10-1)) + 1 : 1;
-        debug_reconnect("Next reconnect in %d seconds", timeout);
+        debug_connect("Next reconnect in %d seconds", timeout);
         setTimeout(tryReconnect, timeout * 1000);
       });
     };
@@ -63,7 +63,7 @@ export class ChannelManager extends EventEmitter {
   }
 
   connect(cb) {
-    debug("Connecting to the rabbitmq server")
+    debug_connect("Connecting to the rabbitmq server")
     if (this.channel) {
       return cb(null, this.channel);
     }
@@ -89,7 +89,7 @@ export class ChannelManager extends EventEmitter {
         this.channel = channel;
 
         this.channel.on('error', err => {
-          debug("Got error on channel: ", err.message, " trying to reconnect")
+          debug_connect("Got error on channel: ", err.message, " trying to reconnect")
           this.reconnect()
         });
 
@@ -101,10 +101,10 @@ export class ChannelManager extends EventEmitter {
   connectRespond(err, channel) {
     this.connectInProgress = false;
     if (err) {
-      debug("Fail to connect...", err);
+      debug_connect("Fail to connect...", err);
     }
     else {
-      debug("Connected");
+      debug_connect("Connected");
     }
     this.connectCallbacks.forEach((extraCb) => {
       if (!extraCb) return;
@@ -120,11 +120,11 @@ export class ChannelManager extends EventEmitter {
       }
 
       const connId = ++channelConnectionLastId
-      debug('Connecting to rabbitmq ' + connId)
+      debug_connect('Connecting to rabbitmq ' + connId)
       this.connect((err, channel) => {
         if (err) return reject(err);
         channel._amqpToolsId = connId
-        debug('Connected to rabbitmq ' + connId)
+        debug_connect('Connected to rabbitmq ' + connId)
         resolve(channel);
       })
     });
@@ -140,7 +140,7 @@ export class ChannelManager extends EventEmitter {
       cb = final
       final = false
     }
-    debug("Disconnecting from the rabbitmq server")
+    debug_connect("Disconnecting from the rabbitmq server")
     if (!this.connection) {
       return cb();
     }
@@ -155,11 +155,12 @@ export class ChannelManager extends EventEmitter {
   }
 
   finalize() {
+    debug_connect("Finalizing ChannelManager, emitting finalize event")
     this.emit("finalize");
   }
 
   reconnect(cb?) {
-    debug('reconnecting')
+    debug_connect('reconnecting')
     this.disconnect(() => {
       this.connect(cb);
     });
