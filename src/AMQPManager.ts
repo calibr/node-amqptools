@@ -1,8 +1,5 @@
-import amqpLib = require("amqplib/callback_api")
 import { AMQPEventEmitter as eventManager } from "./EventEmitter"
 
-import taskManager = require("./TaskManager")
-import async = require("async")
 import { channelManager, ChannelManager } from './ChannelManager'
 import { TaskManager } from "./TaskManager";
 import { Event } from "./Event";

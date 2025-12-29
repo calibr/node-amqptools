@@ -1,10 +1,10 @@
 import * as events from "events";
-import * as util from "util";
-import * as async from "async";
-import { channelManager } from './ChannelManager';
 import { Event } from "./Event";
 import { EventListener } from "./EventListener";
 import { promiseNodeify } from './promise-nodeify';
+import util = require("util");
+
+const debug = util.debuglog("amqptools");
 
 var EventEmitter = events.EventEmitter,
   addListenerMethods = ["addListener", "on", "once"],
@@ -151,6 +151,11 @@ export class AMQPEventEmitter {
 
   emit(event, data) {
     var eParsed = parseEvent(event);
+
+    debug(
+      'EventEmitter, emitting event %s to exchange %s with topic %s and data %j',
+      event, eParsed.exchange, eParsed.topic, data
+    );
 
     var amqpEvent = new Event({
       exchange: eParsed.exchange,
