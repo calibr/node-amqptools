@@ -114,8 +114,17 @@ export class EventListener {
   private assertExchange() {
     return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
+        debug("EventListener, Asserting topic exchange %s with options %j", this.fullExchangeName, EXCHANGE_OPTIONS);
         channel.assertExchange(this.fullExchangeName, "topic", EXCHANGE_OPTIONS,
-          (err) => err ? reject(err) : resolve(channel));
+          (err) => {
+            if (err) {
+              debug("EventListener, Exchange %s assertion failed: %s", this.fullExchangeName, err.message);
+            } else {
+              debug("EventListener, Exchange %s asserted", this.fullExchangeName);
+            }
+
+            err ? reject(err) : resolve(channel)
+          });
       })
     })
   }

@@ -1,10 +1,13 @@
 import { channelManager } from './ChannelManager'
 import { Channel } from "amqplib/callback_api"
+import util = require("util");
 
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
 const EXCHANGE_EVENTS_BY_USER = "nimbus:eventsByUser";
 const EXCHANGE_OPTIONS = {durable: true, autoDelete: false};
+
+const debug = util.debuglog("amqptools");
 
 export interface EventConstructorOptions {
   exchange: string
@@ -46,8 +49,16 @@ export class Event {
   private assertExchange() {
     return channelManager.getChannel().then((channel) => {
       return new Promise((resolve, reject) => {
+        debug("Event, Asserting topic exchange %s with options %j", this.fullExchangeName, EXCHANGE_OPTIONS);
         channel.assertExchange(this.fullExchangeName, "topic", EXCHANGE_OPTIONS,
-          (err) => err ? reject(err) : resolve(channel));
+          (err) => {
+            if (err) {
+              debug("Event, Exchange %s assertion failed: %s", this.fullExchangeName, err.message);
+            } else {
+              debug("Event, Exchange %s asserted", this.fullExchangeName);
+            }
+            err ? reject(err) : resolve(channel)
+          });
       })
     })
   }
@@ -78,10 +89,12 @@ export class Event {
       .then(() => this.assertExchangeForAllEvents())
       .then(() => this.bindToExchangeForAllEvents())
       .then((channel) => {
-        channel.publish(this.fullExchangeName, this.routeKey, buffer, {
+        debug("Event, Publishing to exchange %s with route key %s", this.fullExchangeName, this.routeKey);
+        const result = channel.publish(this.fullExchangeName, this.routeKey, buffer, {
           contentType: "text/json",
           persistent: true
         });
+        debug("Event, Published to exchange %s with route key %s: %s", this.fullExchangeName, this.routeKey, result);
       });
   }
 
