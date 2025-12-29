@@ -79,26 +79,29 @@ export class Task {
 
     const promise = channelManager.getChannel()
       .then(() => {
-        debug('submit', this.uuid, 'got channel')
+        debug('Task', this.uuid, 'got channel')
         return this.assertExchange()
       })
       .then(() => {
-        debug('submit', this.uuid, 'exchange asserted')
+        debug('Task', this.uuid, 'exchange asserted')
         return this.assertQueue()
       })
       .then(() => {
-        debug('submit', this.uuid, 'queue asserted')
+        debug('Task', this.uuid, 'queue asserted')
         return this.bindQueue()
       })
       .then((channel: any) => {
-        debug('submit', this.uuid, 'queue bound')
+        debug('Task', this.uuid, 'queue bound')
         let params = JSON.parse(JSON.stringify(this.params));
         params['uuid'] = this.uuid;
         var eventData = new Buffer(JSON.stringify(params));
 
         channel.publish(this.exchangeName, this.type, eventData);
         if (cb) cb();
-        debug('submit', this.uuid, 'published')
+        debug(
+          'Task %s published to exchange %s with routing key %s, data: %j',
+          this.uuid, this.exchangeName, this.type, eventData
+        );
       });
 
     return promise;
@@ -114,6 +117,7 @@ export class Task {
         return channel
       }
       return new Promise((resolve, reject) => {
+        debug('Task', this.uuid, 'asserting exchange', this.exchangeName)
         channel.assertExchange(this.exchangeName, 'direct', EXCHANGE_OPTIONS, (err) => {
           if (err) {
             return reject(err)
@@ -135,6 +139,7 @@ export class Task {
         return channel
       }
       return new Promise<Channel>((resolve, reject) => {
+        debug('Task', this.uuid, 'asserting queue', this.queueName)
         channel.assertQueue(this.queueName, JOB_QUEUE_OPTIONS, (err) => {
           if (err) return reject(err);
           ASSERTED_QUEUES_CACHE[cacheKey] = true
@@ -155,6 +160,7 @@ export class Task {
       }
       debug('submit', this.uuid, 'binding queue')
       return new Promise((resolve, reject) => {
+        debug('Task', this.uuid, 'binding queue', this.queueName, 'to exchange', this.exchangeName, 'with routing key', this.type)
         channel.bindQueue(this.queueName, this.exchangeName, this.type, {}, (err) => {
           if (err) {
             return reject(err)
