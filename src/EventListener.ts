@@ -1,14 +1,33 @@
 import { channelManager } from './ChannelManager'
 import { Channel } from "amqplib/callback_api"
-import {Options} from "amqplib/properties";
+import {Options} from "amqplib";
 import { AMQPEventEmitter } from './EventEmitter'
 const EXCHANGE_PREFIX = "nimbus:event:";
 const EXCHANGE_ALL_EVENTS = "nimbus:events";
 const EXCHANGE_EVENTS_BY_USER = "nimbus:eventsByUser";
 const QUEUE_PREFIX = "nimbus:listener:";
-const QUEUE_OPTIONS =  { durable: false, autoDelete: true, exclusive: true};
-const PERSISTENT_QUEUE_OPTIONS = { durable: true, autoDelete: false, exclusive: false};
-const QUEUE_RUNTIME_OPTIONS =  { durable: false, autoDelete: true};
+
+const QUEUE_OPTIONS =  {
+  durable: false,
+  autoDelete: true,
+  exclusive: true
+};
+const PERSISTENT_QUEUE_OPTIONS = {
+  durable: true,
+  autoDelete: false,
+  exclusive: false,
+  // quorum queue has to be durable, so we set this type only for persistant queues
+  ...(process.env.AMQPTOOLS_USE_CLASSIC_QUEUES ? {} : {
+    arguments: {
+      'x-queue-type': 'quorum'
+    }
+  })
+};
+const QUEUE_RUNTIME_OPTIONS =  {
+  durable: false,
+  autoDelete: true
+};
+
 const EXCHANGE_OPTIONS = { durable: true, autoDelete: false };
 
 import util = require("util");
@@ -36,32 +55,32 @@ export interface ListenerFunc {
 export class EventListener {
   exchange: string;
   topic: string;
-  queue: string;
+  queue: string = '';
   userId: string;
   // listener queue wont be removed after client disconnects(durable + no auto-delete)
   persistent: boolean = false;
   // auto-ack event message
   autoAck: boolean = true;
   prefetchCount: number;
-  private listener: ListenerFunc;
+  private listener: ListenerFunc | null = null;
   private queueOptions: Options.AssertQueue;
-  private consumerTag: string;
+  private consumerTag: string = '';
   private eventEmitter: AMQPEventEmitter;
 
   constructor(options: EventListenerConstructorOptions, eventEmitter: AMQPEventEmitter) {
-    this.exchange = options.exchange;
-    this.topic = options.topic;
-    this.userId = options.userId;
+    this.exchange = options.exchange || '';
+    this.topic = options.topic || '';
+    this.userId = options.userId || '';
     this.queueOptions = QUEUE_OPTIONS;
     this.prefetchCount = options.prefetchCount || 1
     if (!eventEmitter) {
       throw new Error('eventEmitter is required for EventListener')
     }
     this.eventEmitter = eventEmitter
-    if(options.hasOwnProperty("persistent")) {
+    if(typeof options.persistent !== 'undefined') {
       this.persistent = options.persistent;
     }
-    if(options.hasOwnProperty("autoAck")) {
+    if(typeof options.autoAck !== 'undefined') {
       this.autoAck = options.autoAck;
     }
     if (options.runtime) {
@@ -157,6 +176,13 @@ export class EventListener {
   }
 
   private onMessageReceived = (msg) => {
+    // the broker delivers a null "message" as a consumer cancellation notification
+    // (e.g. the queue was deleted, or a quorum queue leader failed over) — it is not
+    // an actual message, so there is nothing to parse or ack
+    if (!msg) {
+      debug("Consumer on queue %s was cancelled by the broker", this.queueName);
+      return;
+    }
     var message = JSON.parse(msg.content.toString());
     var extra: MessageExtra = {};
     if(this.autoAck) {
@@ -167,7 +193,11 @@ export class EventListener {
         this.ack(msg);
       };
     }
-    this.listener(message, extra);
+    if (this.listener) {
+      this.listener(message, extra);
+    } else {
+      console.error("Listener is not set for event listener on queue " + this.queueName);
+    }
   }
 
   private consume() {

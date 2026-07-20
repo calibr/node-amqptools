@@ -100,7 +100,7 @@ export class Task {
         if (cb) cb();
         debug(
           'Task %s published to exchange %s with routing key %s, data: %j',
-          this.uuid, this.exchangeName, this.type, eventData
+          this.uuid, this.exchangeName, this.type, params
         );
       });
 

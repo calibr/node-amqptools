@@ -6,6 +6,8 @@ import util = require("util");
 
 const debug = util.debuglog("amqptools");
 
+debug("AMQPEventEmitter debuglog enabled");
+
 var EventEmitter = events.EventEmitter,
   addListenerMethods = ["addListener", "on", "once"],
   copyMethods = ["removeAllListeners", "setMaxListeners", "listeners"];
