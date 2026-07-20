@@ -9,7 +9,15 @@ const EXCHANGE_PREFIX = "nimbus:jobs:";
 const EXCHANGE_OPTIONS = {durable: true, autoDelete: false};
 
 const JOB_QUEUE_PREFIX = "nimbus:jobs:queue:";
-const JOB_QUEUE_OPTIONS = {durable: true, autoDelete: false};
+const JOB_QUEUE_OPTIONS = {
+  durable: true,
+  autoDelete: false,
+  ...(process.env.AMQPTOOLS_USE_CLASSIC_QUEUES ? {} : {
+    arguments: {
+      'x-queue-type': 'quorum'
+    }
+  })
+};
 
 const debug = util.debuglog("amqptools");
 
@@ -195,40 +203,50 @@ export class Task {
       .then((channel) => {
         channel.prefetch(this.opts.prefetchCount);
         debug("Attaching task listener for %s, prefetch=%d", this.type, this.opts.prefetchCount);
-        channel.consume(this.queueName, (msg) => {
-          try {
-            var taskData = JSON.parse(msg.content.toString());
-            if (msg.properties && msg.properties.headers) {
-              taskData._headers = msg.properties.headers
+        return new Promise<void>((resolve, reject) => {
+          channel.consume(this.queueName, (msg) => {
+            if (!msg) {
+              // null message happens when the consumer is cancelled
+              return;
             }
-            if (this.opts.nackRedelivered) {
-              if (msg.fields && msg.fields.redelivered) {
-                debug("NACK redelivered message to submit it to the dead letter queue")
-                return channel.nack(msg, false, false)
+            try {
+              var taskData = JSON.parse(msg.content.toString());
+              if (msg.properties && msg.properties.headers) {
+                taskData._headers = msg.properties.headers
               }
+              if (this.opts.nackRedelivered) {
+                if (msg.fields && msg.fields.redelivered) {
+                  debug("NACK redelivered message to submit it to the dead letter queue")
+                  return channel.nack(msg, false, false)
+                }
+              }
+              Task.taskManager.onStartProcesTask(taskData)
+              this.taskCallback(taskData, errRes => {
+                Task.taskManager.onEndProcessTask(taskData, errRes)
+                if (errRes) {
+                  debug("Task failed: " + errRes.message)
+                }
+                if (errRes && errRes.nack) {
+                  debug("NACK task for queue" + this.queueName)
+                  // dead letter the message
+                  channel.nack(msg, false, false)
+                } else {
+                  channel.ack(msg)
+                }
+              })
+            } catch (err) {
+              Task.taskManager.onEndProcessTask(taskData, err)
+              console.error('Malformed message', msg.content.toString(), err)
+              channel.ack(msg)
             }
-            Task.taskManager.onStartProcesTask(taskData)
-            this.taskCallback(taskData, errRes => {
-              Task.taskManager.onEndProcessTask(taskData, errRes)
-              if (errRes) {
-                debug("Task failed: " + errRes.message)
-              }
-              if (errRes && errRes.nack) {
-                debug("NACK task for queue" + this.queueName)
-                // dead letter the message
-                channel.nack(msg, false, false)
-              } else {
-                channel.ack(msg)
-              }
-            })
-          } catch (err) {
-            Task.taskManager.onEndProcessTask(taskData, err)
-            console.error('Malformed message', msg.content.toString(), err)
-            channel.ack(msg)
-          }
-        }, {noAck: false}, (err, ok) => {
-          this.consumerTag = ok.consumerTag
-        });
+          }, {noAck: false}, (err, ok) => {
+            if (err) {
+              return reject(err)
+            }
+            this.consumerTag = ok.consumerTag
+            resolve()
+          });
+        })
       });
   }
 

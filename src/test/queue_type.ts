@@ -37,14 +37,14 @@ function deleteQueue(queueName: string): Promise<void> {
   }));
 }
 
-describe('queue type for event listeners', () => {
+describe('queue type for event listeners/tasks', () => {
   beforeEach(function (done) {
     amqpTools.reconnect(() => done());
   });
 
   // quorum queues must be named, durable and non-exclusive, which only the persistent
   // listener queues are — the default/runtime ephemeral queues stay classic
-  it('creates a quorum queue on rabbitmq for persistent listeners', function (done) {
+  it('creates a quorum queue on rabbitmq for persistent event listeners', function (done) {
     this.timeout(10000);
     const emitter = new amqpTools.events('test-quorum');
     const listener: any = new EventListener(
@@ -62,4 +62,21 @@ describe('queue type for event listeners', () => {
       done();
     }).catch(done);
   });
+
+  // task queues are always named, durable and non-exclusive, so they default to quorum
+  it('creates a quorum queue on rabbitmq for tasks', function (done) {
+    this.timeout(10000);
+    // accessing amqpTools.tasks wires up Task.taskManager so task.queueName resolves
+    const task = amqpTools.tasks.createTask('test-quorum-task-2', { title: 'noop', data: {} });
+    task.processTask(() => { }).then(async () => {
+      const info = await getQueueInfo(task.queueName);
+      // the requested queue type is echoed back in the queue arguments
+      info.arguments['x-queue-type'].should.equal('quorum');
+      // and rabbitmq resolves the queue to an actual quorum queue
+      info.type.should.equal('quorum');
+      task.cancel();
+      await deleteQueue(task.queueName);
+      done();
+    }).catch(done);
+  })
 });
