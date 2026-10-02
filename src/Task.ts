@@ -50,9 +50,6 @@ export class Task {
     this.uuid = uuid.v4();
     this.type = type;
     this.params = params;
-
-    channelManager.on("reconnect", this.onReconnect);
-    channelManager.on("finalize", this.onFinalize);
   }
 
   onReconnect = () => {
@@ -267,6 +264,9 @@ export class Task {
       opts = {};
     }
     this.taskCallback = taskCallback;
+    // only consumers need these; subscribing every published task kept it in memory forever
+    channelManager.on("reconnect", this.onReconnect);
+    channelManager.on("finalize", this.onFinalize);
     opts = opts || {};
     opts.prefetchCount = opts.prefetchCount || 1;
     this.opts = opts;
